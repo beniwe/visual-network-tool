@@ -8,7 +8,9 @@ from otree.api import Page
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
 load_dotenv()
-ASYNC_CLIENT = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+def _get_async_client():
+    return AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 doc = """
 Visual Network Tool — configurable belief-network experiment.
@@ -382,7 +384,7 @@ class ConversationFeedback(Page):
         async def call_and_parse(prompt, retries=3, delay=3):
             for attempt in range(retries):
                 try:
-                    completion = await ASYNC_CLIENT.chat.completions.create(
+                    completion = await _get_async_client().chat.completions.create(
                         model="gpt-4.1-2025-04-14",
                         messages=[{"role": "user", "content": prompt}],
                         stream=False,
