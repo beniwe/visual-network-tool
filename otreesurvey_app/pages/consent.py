@@ -11,11 +11,12 @@ class Consent(Page):
 
     @staticmethod
     def vars_for_template(player):
-        from ..study_config import CONSENT_INTRO, CONSENT_HIGHLIGHT
+        from ..config_loader import get_config
+        cfg = get_config()["study"]
         stamp(player, 'consent:render')
         return dict(
-            consent_intro=CONSENT_INTRO,
-            consent_highlight=CONSENT_HIGHLIGHT,
+            consent_intro=cfg["consent_intro"],
+            consent_highlight=cfg["consent_highlight"],
         )
 
     @staticmethod
