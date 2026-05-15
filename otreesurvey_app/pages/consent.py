@@ -47,7 +47,7 @@ class ConditionSelector(Page):
 
     @staticmethod
     def is_displayed(player):
-        return False
+        return player.consent_given
 
     @staticmethod
     def before_next_page(player, timeout_happened):

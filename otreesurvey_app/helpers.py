@@ -1,18 +1,6 @@
 import json
-import os
 import re
 import time
-
-from openai import AsyncOpenAI
-from dotenv import load_dotenv
-
-load_dotenv()
-
-
-# -- Async LLM client (lazy) -------------------------------------------------
-
-def _get_async_client():
-    return AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
 # -- Node visual encoding ----------------------------------------------------

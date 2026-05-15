@@ -1,10 +1,13 @@
 import json
-import asyncio
 from datetime import datetime
 from otree.api import Page
 
-from ..helpers import stamp, _get_async_client, _INTERVIEW_CONDITIONS
-from ..constants import C
+from ..helpers import stamp, _INTERVIEW_CONDITIONS
+
+
+def _max_turns():
+    from ..config_loader import get_config
+    return get_config()["interview"].get("max_turns", 8)
 
 
 class Information(Page):
@@ -31,9 +34,9 @@ class InterviewMain(Page):
             player.participant.vars["interview_turns"] = 1
 
         if not conversation:
-            from ..llm_prompts import INTERVIEW_OPENING_QUESTION
+            from ..llm_prompts import get_opening_question
             conversation.append({
-                "question": INTERVIEW_OPENING_QUESTION,
+                "question": get_opening_question(),
                 "answer": "",
                 "time_sent": datetime.utcnow().isoformat(),
                 "time_received": None
@@ -43,8 +46,8 @@ class InterviewMain(Page):
         return dict(
             conversation=conversation,
             current_turn=player.participant.vars["interview_turns"],
-            max_turns=C.MAX_TURNS,
-            progress_percentage=int(100 * player.participant.vars["interview_turns"] / C.MAX_TURNS)
+            max_turns=_max_turns(),
+            progress_percentage=int(100 * player.participant.vars["interview_turns"] / _max_turns())
         )
 
     @staticmethod
@@ -67,12 +70,12 @@ class InterviewMain(Page):
 
         current_turn = player.participant.vars["interview_turns"]
 
-        if current_turn < C.MAX_TURNS:
+        if current_turn < _max_turns():
             qa_history = [
                 UserAnswer(question=entry["question"], answer=entry["answer"])
                 for entry in conversation if entry.get("answer") and entry["answer"].strip()
             ]
-            llm_turn = generate_conversational_question(qa_history, C.MAX_TURNS)
+            llm_turn = generate_conversational_question(qa_history, _max_turns())
 
             conversation.append({
                 "question": llm_turn.interviewer_utterance,
@@ -89,7 +92,7 @@ class InterviewMain(Page):
         return (
             player.consent_given
             and player.field_maybe_none('condition') in _INTERVIEW_CONDITIONS
-            and player.participant.vars.get("interview_turns", 1) <= C.MAX_TURNS
+            and player.participant.vars.get("interview_turns", 1) <= _max_turns()
         )
 
 
@@ -111,38 +114,25 @@ class ConversationFeedback(Page):
     @staticmethod
     async def live_method(player, data):
         from ..llm_prompts import make_node_prompt, enrich_detected_stances
+        from ..llm.client import async_call_llm_raw
 
-        async def call_and_parse(prompt, retries=3, delay=3):
-            for attempt in range(retries):
-                try:
-                    completion = await _get_async_client().chat.completions.create(
-                        model="gpt-4.1-2025-04-14",
-                        messages=[{"role": "user", "content": prompt}],
-                        stream=False,
-                    )
-                    raw = completion.choices[0].message.content.strip()
+        async def call_and_parse(prompt):
+            raw = await async_call_llm_raw(prompt, temp=0.1)
 
-                    try:
-                        parsed = json.loads(raw)
-                    except json.JSONDecodeError:
-                        cleaned = raw.replace("```json", "").replace("```", "").strip()
-                        parsed = json.loads(cleaned)
+            try:
+                parsed = json.loads(raw)
+            except json.JSONDecodeError:
+                cleaned = raw.replace("```json", "").replace("```", "").strip()
+                parsed = json.loads(cleaned)
 
-                    if isinstance(parsed, dict) and "detected" in parsed:
-                        return parsed["detected"]
-                    elif isinstance(parsed, dict) and "results" in parsed:
-                        return parsed["results"]
-                    elif isinstance(parsed, list):
-                        return parsed
-                    else:
-                        raise ValueError("Response not in expected JSON list format.")
-
-                except Exception as e:
-                    print(f"Attempt {attempt+1} failed:", e)
-                    if attempt < retries - 1:
-                        await asyncio.sleep(delay)
-                    else:
-                        raise
+            if isinstance(parsed, dict) and "detected" in parsed:
+                return parsed["detected"]
+            elif isinstance(parsed, dict) and "results" in parsed:
+                return parsed["results"]
+            elif isinstance(parsed, list):
+                return parsed
+            else:
+                raise ValueError("Response not in expected JSON list format.")
 
         try:
             conversation = json.loads(player.conversation_json or "[]")
@@ -155,7 +145,7 @@ class ConversationFeedback(Page):
             prompt = make_node_prompt(qa)
             player.prompt_used = prompt
 
-            llm_nodes_list = await call_and_parse(prompt, retries=3, delay=2)
+            llm_nodes_list = await call_and_parse(prompt)
             llm_nodes_list = enrich_detected_stances(llm_nodes_list or [])
 
             player.llm_result = json.dumps({"detected": llm_nodes_list}, indent=2)

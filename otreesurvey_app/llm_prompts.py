@@ -1,47 +1,12 @@
-from openai import OpenAI
-import os
-from dotenv import load_dotenv
-import instructor
-from tenacity import retry, stop_after_attempt, wait_fixed
-from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
-from .dynamic_items import DYNAMIC_ITEMS
-
-STANCE_LOOKUP = {item["id"]: item for item in DYNAMIC_ITEMS}
-
-load_dotenv(dotenv_path=Path(__file__).parent / ".env")
-
-custom_retry = retry(
-    stop=stop_after_attempt(5),
-    wait=wait_fixed(2),
-    reraise=True,
-)
-
-@custom_retry
-def call_openai(response_model, content_prompt, model_name='gpt-4.1-2025-04-14', temp=0.7):
-    client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-    client = instructor.from_openai(client, mode=instructor.Mode.TOOLS)
-
-    kwargs = dict(
-        model=model_name,
-        messages=[{"role": "user", "content": content_prompt}],
-        response_model=response_model,
-    )
-
-    if model_name not in ['o3', 'o3-mini', 'o4-mini']:
-        kwargs['temperature'] = temp
-
-    try:
-        return client.chat.completions.create(**kwargs)
-    except Exception as exc:
-        print(f"Exception with model {model_name}: {exc}")
-        raise
+from .llm import call_llm
+from .config_loader import get_config
 
 
 # =============================================================================
-# INTERVIEW
+# Pydantic models
 # =============================================================================
 
 class UserAnswer(BaseModel):
@@ -61,27 +26,50 @@ class InterviewTurn(BaseModel):
         description="Short rationale explaining why this utterance is appropriate given the context.",
     )
 
-INTERVIEW_OPENING_QUESTION = (
-    "In this interview, we're talking about meat-eating. "
-    "What's the first thing that comes to your mind?"
-)
+class StanceScore(BaseModel):
+    stance_id: str
+    likert: int
+    evidence: str
+
+class StanceDetectionResult(BaseModel):
+    detected: List[StanceScore]
+
+
+# =============================================================================
+# INTERVIEW
+# =============================================================================
+
+def get_opening_question():
+    return get_config()["interview"]["opening_question"]
+
+
+def _get_items():
+    return get_config()["node_extraction"]["items"]
+
 
 def _build_target_list() -> str:
-    return "\n".join(f"- {item['template'].replace('[SCALE]', 'agree')}" for item in DYNAMIC_ITEMS)
+    return "\n".join(
+        f"- {item['template'].replace('[SCALE]', 'agree')}"
+        for item in _get_items()
+    )
 
 
 def generate_conversational_question(history: List[UserAnswer], n_rounds=8) -> InterviewTurn:
+    cfg = get_config()
+    interview_cfg = cfg["interview"]
+    topic = interview_cfg.get("topic", "the topic")
+    closing = interview_cfg.get("closing_question", "Is there anything else you'd like to share?")
+
     conversation_str = ""
     for turn in history:
         conversation_str += f"Interviewer: {turn.question}\nParticipant: {turn.answer}\n\n"
 
     current_round = len(history) + 1
-
     penultimate_turn = n_rounds - 1
 
     system_prompt = f"""
 You are a thoughtful, empathetic, and curious interviewer. Your job is to have a
-genuine conversation about meat-eating — not to conduct a structured survey.
+genuine conversation about {topic} — not to conduct a structured survey.
 
 Current conversation:
 {conversation_str}
@@ -89,13 +77,13 @@ Current conversation:
 =*=*=
 
 Your purpose:
-Help the participant surface what is genuinely salient to them about meat-eating.
+Help the participant surface what is genuinely salient to them about {topic}.
 You are not trying to ensure every topic gets covered. What comes up naturally is
 the data. What does not come up is also the data.
 
 What you want to learn about, broadly:
 - Their habits and how they came about
-- Anything that shapes how they think or feel about meat — enjoyment, health,
+- Anything that shapes how they think or feel about {topic} — enjoyment, health,
   ethics, convenience, identity, social pressure, concerns, values, or anything else
 - Their social context — what people around them do and think
 
@@ -143,8 +131,7 @@ PHASE 2 — turn {penultimate_turn} onward:
   specific topic. Frame it as an invitation, not a probe.
 
   On the final turn ({n_rounds}), always close with:
-  "Is there anything else — whether practical, personal, ethical, or just something
-  that matters to you — that shapes how you think about meat that we haven't touched on?"
+  "{closing}"
 
 =*=*=
 
@@ -162,10 +149,9 @@ Conversation constraints:
 Generate the next interviewer question.
     """
 
-    return call_openai(
+    return call_llm(
         response_model=InterviewTurn,
-        content_prompt=system_prompt,
-        model_name='gpt-4.1-2025-04-14',
+        prompt=system_prompt,
         temp=0.7,
     )
 
@@ -174,31 +160,20 @@ Generate the next interviewer question.
 # CLOSED-STANCE NODE DETECTION
 # =============================================================================
 
-class StanceScore(BaseModel):
-    stance_id: str
-    likert: int
-    evidence: str
-
-class StanceDetectionResult(BaseModel):
-    detected: List[StanceScore]
-
-
 def _build_stance_block() -> str:
     lines = []
-    for item in DYNAMIC_ITEMS:
-        meta = STANCE_LOOKUP.get(item["id"], {})
-        statement = meta.get("statement") or item["template"].replace("[SCALE]", "agree")
-        codebook = meta.get("codebook", "")
+    for item in _get_items():
+        statement = item["template"].replace("[SCALE]", "agree")
+        codebook = item.get("codebook", "")
         lines.append(f'[{item["id"]}] "{statement}"')
         if codebook:
             lines.append(f'  Guidance: {codebook}')
         lines.append("")
     return "\n".join(lines)
 
-STANCE_BLOCK = _build_stance_block()
 
-NODE_PROMPT_TEMPLATE = """\
-You are a social scientist analysing interview transcripts about meat-eating habits.
+_NODE_PROMPT_TEMPLATE = """\
+You are a social scientist analysing interview transcripts about {topic}.
 
 You are given an interview transcript and a fixed list of predefined stances, \
 each with coding guidance that describes what counts as evidence and how to \
@@ -247,40 +222,38 @@ Return ONLY the JSON object. For each detected stance provide:
 
 
 def make_node_prompt(questions_answers: dict) -> str:
+    topic = get_config()["interview"].get("topic", "the topic")
     transcript_str = "\n".join(
         f"Q: {q}\nA: {a}" for q, a in questions_answers.items()
     )
-    return NODE_PROMPT_TEMPLATE.format(
-        stance_block=STANCE_BLOCK,
+    return _NODE_PROMPT_TEMPLATE.format(
+        topic=topic,
+        stance_block=_build_stance_block(),
         transcript=transcript_str,
     )
 
 
 def detect_stances(questions_answers: dict) -> List[StanceScore]:
-    """Sync stance detection via instructor — returns scored stances for the transcript."""
+    """Sync stance detection — returns scored stances for the transcript."""
     prompt = make_node_prompt(questions_answers)
-    result = call_openai(
+    result = call_llm(
         response_model=StanceDetectionResult,
-        content_prompt=prompt,
-        model_name='gpt-4.1-2025-04-14',
+        prompt=prompt,
         temp=0.1,
     )
     return result.detected
 
 
 def enrich_detected_stances(detected: list) -> list:
-    """
-    Given a list of dicts with stance_id/likert/evidence (as parsed from raw JSON
-    in the async live_method), add the statement and label from STANCE_LOOKUP so
-    downstream code can read the human-readable text directly.
-    """
+    """Add statement and label from config items so downstream code has readable text."""
+    item_lookup = {item["id"]: item for item in _get_items()}
     enriched = []
     for item in detected:
         sid = item.get("stance_id", "")
-        meta = STANCE_LOOKUP.get(sid, {})
+        meta = item_lookup.get(sid, {})
         enriched.append({
             "stance_id": sid,
-            "statement": meta.get("statement", sid),
+            "statement": meta.get("template", sid).replace("[SCALE]", "agree"),
             "label":     meta.get("label", sid),
             "direction": meta.get("direction", ""),
             "likert":    item.get("likert"),
