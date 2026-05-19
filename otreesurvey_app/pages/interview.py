@@ -113,26 +113,7 @@ class ConversationFeedback(Page):
 
     @staticmethod
     async def live_method(player, data):
-        from ..llm_prompts import make_node_prompt, enrich_detected_stances
-        from ..llm.client import async_call_llm_raw
-
-        async def call_and_parse(prompt):
-            raw = await async_call_llm_raw(prompt, temp=0.1)
-
-            try:
-                parsed = json.loads(raw)
-            except json.JSONDecodeError:
-                cleaned = raw.replace("```json", "").replace("```", "").strip()
-                parsed = json.loads(cleaned)
-
-            if isinstance(parsed, dict) and "detected" in parsed:
-                return parsed["detected"]
-            elif isinstance(parsed, dict) and "results" in parsed:
-                return parsed["results"]
-            elif isinstance(parsed, list):
-                return parsed
-            else:
-                raise ValueError("Response not in expected JSON list format.")
+        from ..llm.node_extraction import async_extract_nodes
 
         try:
             conversation = json.loads(player.conversation_json or "[]")
@@ -142,15 +123,12 @@ class ConversationFeedback(Page):
                 if e.get("answer") and str(e["answer"]).strip()
             }
 
-            prompt = make_node_prompt(qa)
+            nodes_list, prompt = await async_extract_nodes(qa)
             player.prompt_used = prompt
 
-            llm_nodes_list = await call_and_parse(prompt)
-            llm_nodes_list = enrich_detected_stances(llm_nodes_list or [])
-
-            player.llm_result = json.dumps({"detected": llm_nodes_list}, indent=2)
-            player.generated_nodes = json.dumps(llm_nodes_list)
-            player.num_nodes = len(llm_nodes_list)
+            player.llm_result = json.dumps({"detected": nodes_list}, indent=2)
+            player.generated_nodes = json.dumps(nodes_list)
+            player.num_nodes = len(nodes_list)
 
             yield {player.id_in_group: {"done": True}}
 
