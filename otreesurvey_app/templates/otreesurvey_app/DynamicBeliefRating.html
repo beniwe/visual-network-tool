@@ -29,7 +29,6 @@
     transition: font-size 0.15s ease;
   }
 
-  /* The highlighted fill-in word inside brackets */
   .scale-token {
     display: inline-block;
     background: #fff3b0;
@@ -106,26 +105,17 @@
 <div class="instructions">
   <h3>Complete each statement</h3>
   <p class="muted">
-    Move the slider to find the words that best describe your own views and
-    habits around eating meat. The highlighted
+    Move the slider to find the words that best describe your own views.
+    {% if use_scale_token == "true" %}
+    The highlighted
     <span class="scale-token" style="font-size: 0.9rem">&nbsp;word&nbsp;</span>
     will update as you drag.
+    {% endif %}
   </p>
   <p class="muted" style="margin-top: 0.5rem">
-    Try to be as careful and honest as possible when creating your statements.
-    The statements that you create will represent your personal perspective in
-    the next part of the study. The next part of the study will be easier and
-    more meaningful if each statement truly reflects your own views and habits.
+    Try to be as careful and honest as possible when rating each statement.
+    Your ratings will represent your personal perspective in the next part of the study.
   </p>
-  {% if show_importance == "true" %}
-  <p class="muted" style="margin-top: 0.5rem">
-    For each statement, also rate <b>how important</b> it is to your meat-eating
-    <small
-      >(1 = Not at all important &nbsp;·&nbsp; 7 = Extremely important)</small
-    >. For this rating, consider how much each statement influences whether you
-    eat meat or not, and how much.
-  </p>
-  {% endif %}
 </div>
 
 <input
@@ -141,84 +131,73 @@
   id="error-message"
   style="display: none; color: red; margin: 1rem 0; font-weight: 700"
 >
-  Please complete all sentences before continuing.
+  Please complete all ratings before continuing.
 </div>
 {{ next_button }}
 
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     const ITEMS           = {{ items_json }};
-    const SHOW_IMPORTANCE = {{ show_importance }};
+    const USE_SCALE_TOKEN = {{ use_scale_token }};
+    const SCALE_MIN       = {{ scale_min }};
     const SCALE_MAX       = {{ scale_max }};
     const START_VAL       = {{ start_val }};
+    const PRIMARY_ANCHOR_LO = "{{ primary_anchor_lo }}";
+    const PRIMARY_ANCHOR_HI = "{{ primary_anchor_hi }}";
+    const EXTRA_DIMS      = {{ extra_dims_json }};
 
     const container  = document.getElementById('items-container');
     const touched    = new Set();
     const PRISTINE_TEXT = '···';
 
-    // Agreement colour map — matches _AGREEMENT_COLORS in __init__.py
+    // Agreement colour map
     const AGREE_COLORS = {
       1: '#d73027', 2: '#f46d43', 3: '#fdae61',
       4: '#a1d99b', 5: '#41ab5d', 6: '#006d2c',
     };
 
     function applyAgreementColor(row, sentenceEl, tokenEl, v) {
-      const disagree = v <= 3;
-      tokenEl.classList.toggle('disagree', disagree);
-      tokenEl.classList.toggle('agree',    !disagree);
+      const mid = (SCALE_MIN + SCALE_MAX) / 2;
+      const disagree = v <= mid;
+      if (tokenEl) {
+        tokenEl.classList.toggle('disagree', disagree);
+        tokenEl.classList.toggle('agree',    !disagree);
+      }
       const bg = disagree
-        ? 'rgba(215,48,39,0.06)'   // faint red tint
-        : 'rgba(65,171,93,0.08)';  // faint green tint
+        ? 'rgba(215,48,39,0.06)'
+        : 'rgba(65,171,93,0.08)';
       sentenceEl.style.color = AGREE_COLORS[v] || '#111';
       row.style.backgroundColor = bg;
     }
 
-    const IMPORTANCE_LABELS = {
-      1: 'Not at all important',
-      2: 'Slightly important',
-      3: 'Somewhat important',
-      4: 'Moderately important',
-      5: 'Important',
-      6: 'Very important',
-      7: 'Extremely important',
-    };
-
-    function importanceFontSize(v) {
-      // v 1–6 → 0.85rem–1.35rem, step 0.1rem
-      return (0.85 + (v - 1) * 0.1).toFixed(2) + 'rem';
-    }
-
-    function paintFromLeft(slider, value) {
-      const v   = Math.max(1, Math.min(SCALE_MAX, Number(value)));
-      const pct = ((v - 1) / (SCALE_MAX - 1)) * 100;
+    function paintFromLeft(slider, value, scaleMin, scaleMax) {
+      const v   = Math.max(scaleMin, Math.min(scaleMax, Number(value)));
+      const pct = ((v - scaleMin) / (scaleMax - scaleMin)) * 100;
       slider.style.background =
         `linear-gradient(to right, #424242 0%, #424242 ${pct}%, #e0e0e0 ${pct}%, #e0e0e0 100%)`;
     }
 
     function buildParts(template, labels, value, pristine) {
-      // Split template on [SCALE] to get before/after text
+      if (!template.includes('[SCALE]')) {
+        return { before: template, word: '', after: '' };
+      }
       const parts = template.split('[SCALE]');
       const before = parts[0];
       const after  = parts[1] || '';
-      const word   = pristine ? PRISTINE_TEXT : labels[String(value)];
+      const word   = pristine ? PRISTINE_TEXT : (labels[String(value)] || labels[value] || '');
 
-      // Capitalise first letter of whole sentence
-      let beforeCap = before;
       if (before === '') {
-        // [SCALE] is at the start — capitalise the word
         return { before: '', word: pristine ? PRISTINE_TEXT : (word.charAt(0).toUpperCase() + word.slice(1)), after };
-      } else {
-        beforeCap = before.charAt(0).toUpperCase() + before.slice(1);
-        return { before: beforeCap, word, after };
       }
+      return { before: before.charAt(0).toUpperCase() + before.slice(1), word, after };
     }
 
     function renderSentence(sentenceEl, tokenEl, template, labels, value, pristine) {
+      if (!tokenEl) return;
       const { before, word, after } = buildParts(template, labels, value, pristine);
-      // Update only the token text so surrounding text doesn't flicker
       sentenceEl.childNodes[0].textContent = before;
       tokenEl.textContent = word;
-      sentenceEl.childNodes[2].textContent = after;
+      if (sentenceEl.childNodes[2]) sentenceEl.childNodes[2].textContent = after;
 
       if (pristine) {
         tokenEl.classList.remove('active');
@@ -227,8 +206,8 @@
       }
     }
 
-    // Each item needs sentence slider + optionally importance slider
-    const REQUIRED = ITEMS.length * (SHOW_IMPORTANCE ? 2 : 1);
+    // Total required touches: primary slider + each extra dim per item
+    const REQUIRED = ITEMS.length * (1 + EXTRA_DIMS.length);
 
     function updateNext() {
       const btn = document.getElementById('nextButton') || document.querySelector('.otree-btn-next');
@@ -243,103 +222,119 @@
       const row = document.createElement('div');
       row.className = 'dynamic-row';
 
-      // Build sentence node with a text-node / token / text-node structure
       const sentenceEl = document.createElement('div');
       sentenceEl.className = 'sentence-display';
 
-      const tokenEl = document.createElement('span');
-      tokenEl.className = 'scale-token';
-      tokenEl.textContent = PRISTINE_TEXT;
+      let tokenEl = null;
 
-      const { before, word, after } = buildParts(item.template, item.labels, START_VAL, true);
-      sentenceEl.appendChild(document.createTextNode(before));
-      sentenceEl.appendChild(tokenEl);
-      sentenceEl.appendChild(document.createTextNode(after));
+      if (USE_SCALE_TOKEN && item.template.includes('[SCALE]')) {
+        tokenEl = document.createElement('span');
+        tokenEl.className = 'scale-token';
+        tokenEl.textContent = PRISTINE_TEXT;
+
+        const { before, word, after } = buildParts(item.template, item.labels, START_VAL, true);
+        sentenceEl.appendChild(document.createTextNode(before));
+        sentenceEl.appendChild(tokenEl);
+        sentenceEl.appendChild(document.createTextNode(after));
+      } else {
+        sentenceEl.textContent = item.template;
+      }
+
+      // Primary dimension anchors — use item-level if provided, else config-level
+      const anchorLo = item.anchor_lo || PRIMARY_ANCHOR_LO;
+      const anchorHi = item.anchor_hi || PRIMARY_ANCHOR_HI;
 
       const anchorsEl = document.createElement('div');
       anchorsEl.className = 'scale-anchors';
-      anchorsEl.innerHTML = `<span>${item.anchor_lo}</span><span>${item.anchor_hi}</span>`;
+      anchorsEl.innerHTML = '<span>' + anchorLo + '</span><span>' + anchorHi + '</span>';
 
       const slider = document.createElement('input');
       slider.type      = 'range';
       slider.className = 'likert-slider';
-      slider.id        = `slider_${i}`;
-      slider.min       = 1;
+      slider.id        = 'slider_' + i;
+      slider.min       = SCALE_MIN;
       slider.max       = SCALE_MAX;
       slider.step      = 1;
       slider.value     = START_VAL;
-      // No painted track until first touch
       slider.style.background = '#e0e0e0';
 
       row.appendChild(sentenceEl);
       row.appendChild(anchorsEl);
       row.appendChild(slider);
 
-      // Importance slider (condition C only)
-      let impSlider = null;
-      if (SHOW_IMPORTANCE) {
-        const impLabel = document.createElement('div');
-        impLabel.style.cssText = 'font-size:0.9rem; font-weight:600; color:#333; margin-top:0.9rem; margin-bottom:4px;';
-        impLabel.textContent = 'How important is this to your meat-eating?';
+      // Extra dimensions (importance, etc.)
+      var extraSliders = [];
+      EXTRA_DIMS.forEach(function (dim, di) {
+        var dimLabel = document.createElement('div');
+        dimLabel.style.cssText = 'font-size:0.9rem; font-weight:600; color:#333; margin-top:0.9rem; margin-bottom:4px;';
+        dimLabel.textContent = dim.label || dim.id;
 
-        const impAnchors = document.createElement('div');
-        impAnchors.className = 'scale-anchors';
-        impAnchors.innerHTML = '<span>Not at all important</span><span>Extremely important</span>';
+        var dimAnchors = document.createElement('div');
+        dimAnchors.className = 'scale-anchors';
+        dimAnchors.innerHTML = '<span>' + (dim.anchor_lo || '') + '</span><span>' + (dim.anchor_hi || '') + '</span>';
 
-        impSlider = document.createElement('input');
-        impSlider.type      = 'range';
-        impSlider.className = 'likert-slider';
-        impSlider.id        = `imp_slider_${i}`;
-        impSlider.min = 1; impSlider.max = SCALE_MAX; impSlider.step = 1;
-        impSlider.value = START_VAL;
-        impSlider.style.background = '#e0e0e0';
+        var dimSlider = document.createElement('input');
+        dimSlider.type      = 'range';
+        dimSlider.className = 'likert-slider';
+        dimSlider.id        = 'dim_' + di + '_slider_' + i;
+        dimSlider.min       = dim.scale_min || 1;
+        dimSlider.max       = dim.scale_max || 7;
+        dimSlider.step      = 1;
+        dimSlider.value     = dim.scale_min || 1;
+        dimSlider.style.background = '#e0e0e0';
 
-        const impReadout = document.createElement('div');
-        impReadout.id = `imp_readout_${i}`;
-        impReadout.style.cssText = 'font-size:0.85rem; color:#999; min-height:16px;';
-        impReadout.textContent = 'Please move the slider';
+        var dimReadout = document.createElement('div');
+        dimReadout.id = 'dim_' + di + '_readout_' + i;
+        dimReadout.style.cssText = 'font-size:0.85rem; color:#999; min-height:16px;';
+        dimReadout.textContent = 'Please move the slider';
 
-        row.appendChild(impLabel);
-        row.appendChild(impAnchors);
-        row.appendChild(impSlider);
-        row.appendChild(impReadout);
+        row.appendChild(dimLabel);
+        row.appendChild(dimAnchors);
+        row.appendChild(dimSlider);
+        row.appendChild(dimReadout);
 
-        let impPristine = true;
-        function activateImp() {
-          impPristine = false;
-          impSlider.classList.add('active');
-          const v = Number(impSlider.value);
-          paintFromLeft(impSlider, v);
-          impReadout.innerHTML = `Selected: <b>${IMPORTANCE_LABELS[v]}</b> &nbsp;(${v}/7)`;
-          impReadout.style.color = '#111';
-          sentenceEl.style.fontSize = importanceFontSize(v);
-          touched.add(`imp_${i}`);
+        var dimPristine = true;
+        var dimMin = dim.scale_min || 1;
+        var dimMax = dim.scale_max || 7;
+
+        function activateDim() {
+          dimPristine = false;
+          dimSlider.classList.add('active');
+          var v = Number(dimSlider.value);
+          paintFromLeft(dimSlider, v, dimMin, dimMax);
+          dimReadout.innerHTML = 'Selected: <b>' + v + '</b> / ' + dimMax;
+          dimReadout.style.color = '#111';
+          touched.add('dim_' + di + '_' + i);
           updateNext();
         }
-        impSlider.addEventListener('pointerdown', activateImp);
-        impSlider.addEventListener('input', function () {
-          if (!impPristine) {
-            const v = Number(impSlider.value);
-            paintFromLeft(impSlider, v);
-            impReadout.innerHTML = `Selected: <b>${IMPORTANCE_LABELS[v]}</b> &nbsp;(${v}/7)`;
-            sentenceEl.style.fontSize = importanceFontSize(v);
+        dimSlider.addEventListener('pointerdown', activateDim);
+        dimSlider.addEventListener('input', function () {
+          if (!dimPristine) {
+            var v = Number(dimSlider.value);
+            paintFromLeft(dimSlider, v, dimMin, dimMax);
+            dimReadout.innerHTML = 'Selected: <b>' + v + '</b> / ' + dimMax;
           }
         });
-      }
+
+        extraSliders.push({ dimId: dim.id, slider: dimSlider });
+      });
 
       container.appendChild(row);
 
-      let pristine = true;
+      // Primary slider activation
+      var pristine = true;
 
       function activate() {
         if (pristine) {
           pristine = false;
           slider.classList.add('active');
         }
-        const v = Number(slider.value);
-        paintFromLeft(slider, v);
-        renderSentence(sentenceEl, tokenEl, item.template, item.labels, v, false);
-        applyAgreementColor(row, sentenceEl, tokenEl, v);
+        var v = Number(slider.value);
+        paintFromLeft(slider, v, SCALE_MIN, SCALE_MAX);
+        if (tokenEl) {
+          renderSentence(sentenceEl, tokenEl, item.template, item.labels, v, false);
+          applyAgreementColor(row, sentenceEl, tokenEl, v);
+        }
         touched.add(i);
         updateNext();
       }
@@ -347,33 +342,54 @@
       slider.addEventListener('pointerdown', activate);
       slider.addEventListener('input', function () {
         if (!pristine) {
-          const v = Number(slider.value);
-          paintFromLeft(slider, v);
-          renderSentence(sentenceEl, tokenEl, item.template, item.labels, v, false);
-          applyAgreementColor(row, sentenceEl, tokenEl, v);
+          var v = Number(slider.value);
+          paintFromLeft(slider, v, SCALE_MIN, SCALE_MAX);
+          if (tokenEl) {
+            renderSentence(sentenceEl, tokenEl, item.template, item.labels, v, false);
+            applyAgreementColor(row, sentenceEl, tokenEl, v);
+          }
         }
       });
+
+      // Store extra sliders reference on the item for form submission
+      item._extraSliders = extraSliders;
     });
 
     updateNext();
 
     document.querySelector('form').addEventListener('submit', function (e) {
-      if (touched.size < ITEMS.length) {
+      if (touched.size < REQUIRED) {
         e.preventDefault();
         document.getElementById('error-message').style.display = 'block';
         window.scrollTo({ top: 0, behavior: 'smooth' });
         return;
       }
 
-      const ratings = ITEMS.map(function (item, i) {
-        const slider = document.getElementById(`slider_${i}`);
-        const v = Number(slider.value);
-        const { before, word, after } = buildParts(item.template, item.labels, v, false);
-        const entry = { id: item.id, value: v, sentence: (before + word + after).trim() };
-        if (SHOW_IMPORTANCE) {
-          const imp = document.getElementById(`imp_slider_${i}`);
-          entry.importance = imp ? Number(imp.value) : null;
+      var ratings = ITEMS.map(function (item, i) {
+        var slider = document.getElementById('slider_' + i);
+        var v = Number(slider.value);
+        var entry = { id: item.id, value: v };
+
+        // Build sentence if template has [SCALE]
+        if (USE_SCALE_TOKEN && item.template.includes('[SCALE]')) {
+          var parts = buildParts(item.template, item.labels, v, false);
+          entry.sentence = (parts.before + parts.word + parts.after).trim();
+        } else {
+          entry.sentence = item.template;
         }
+
+        // Extra dimensions
+        var dims = {};
+        (item._extraSliders || []).forEach(function (es) {
+          dims[es.dimId] = Number(es.slider.value);
+        });
+        entry.dimensions = dims;
+
+        // Backward compat: importance is the first extra dim if it exists
+        if (dims.importance !== undefined) {
+          entry.importance = dims.importance;
+        }
+
         return entry;
       });
       document.getElementById('dynamic_belief_ratings_json').value = JSON.stringify(ratings);
