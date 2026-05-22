@@ -5,38 +5,87 @@ import time
 
 # -- Node visual encoding ----------------------------------------------------
 
-_AGREEMENT_COLORS = {
-    1: '#d73027',
-    2: '#d73027',
-    3: '#d73027',
-    4: '#006d2c',
-    5: '#006d2c',
-    6: '#006d2c',
-}
+def _get_canvas_config():
+    from .config_loader import get_config
+    return get_config()["canvas"]["nodes"]
 
 
-def _node_radius(importance):
-    v = max(1, min(7, importance or 4))
-    return 10 + (v - 1) * 2
+def _get_dimension_value(node, dim_id):
+    """Extract a dimension value from a final_nodes entry.
+
+    Checks the generic ``dimensions`` dict first, then falls back to the
+    legacy flat keys (``rating`` for agreement, ``relevance`` /
+    ``dynamic_importance`` for importance).
+    """
+    if not dim_id:
+        return None
+    dims = node.get("dimensions", {})
+    if dim_id in dims:
+        return dims[dim_id]
+    if dim_id == "agreement":
+        return node.get("rating")
+    if dim_id == "importance":
+        return node.get("relevance") or node.get("dynamic_importance")
+    return None
 
 
-def _node_color(agreement):
-    v = max(1, min(6, agreement or 4))
-    return _AGREEMENT_COLORS[v]
+def _node_color(value):
+    """Determine node color from a rating value using the canvas config."""
+    canvas = _get_canvas_config()
+    color_map = canvas.get("color_map", {})
+    threshold = color_map.get("threshold", 3.5)
+    low = color_map.get("low_color", "#d73027")
+    high = color_map.get("high_color", "#006d2c")
+    if value is None:
+        return high
+    return low if float(value) <= threshold else high
+
+
+def _node_radius(value, dim_id=None):
+    """Compute node radius via linear interpolation over the dimension scale.
+
+    If *dim_id* is ``None`` the size dimension from the canvas config is
+    used.  When no size dimension is configured (or the value is missing)
+    the fixed radius from config is returned.
+    """
+    from .config_loader import get_config
+    cfg = get_config()
+    canvas = cfg["canvas"]["nodes"]
+    dim_id = dim_id or canvas.get("size_dimension")
+    if not dim_id or value is None:
+        return canvas.get("fixed_radius", 14)
+    dim_lookup = {d["id"]: d for d in cfg["node_rating"]["dimensions"]}
+    dim_cfg = dim_lookup.get(dim_id, {})
+    scale_min = dim_cfg.get("scale_min", 1)
+    scale_max = dim_cfg.get("scale_max", 7)
+    size_range = canvas.get("size_range", [10, 22])
+    t = (float(value) - scale_min) / max(1, scale_max - scale_min)
+    t = max(0.0, min(1.0, t))
+    return round(size_range[0] + t * (size_range[1] - size_range[0]))
 
 
 def get_node_display_data(player):
     """Return [{belief, short_label, radius, color}, ...] for every node in final_nodes."""
+    canvas = _get_canvas_config()
+    color_dim = canvas.get("color_dimension", "agreement")
+    size_dim = canvas.get("size_dimension")
+
     nodes = json.loads(player.final_nodes or '[]')
-    return [
-        {
+    result = []
+    for n in nodes:
+        color_val = _get_dimension_value(n, color_dim)
+        if size_dim:
+            size_val = _get_dimension_value(n, size_dim)
+            radius = _node_radius(size_val, size_dim)
+        else:
+            radius = canvas.get("fixed_radius", 14)
+        result.append({
             "belief":      n.get("dynamic_sentence_simple") or n.get("belief", ""),
             "short_label": n.get("short_label", ""),
-            "radius":      14,
-            "color":       _node_color(n.get("rating")),
-        }
-        for n in nodes
-    ]
+            "radius":      radius,
+            "color":       _node_color(color_val),
+        })
+    return result
 
 
 # -- Timing helper ------------------------------------------------------------
@@ -75,15 +124,7 @@ _TAG_CONDITIONS         = {'color_tag', 'interview_tag'}
 
 # -- Demo data ----------------------------------------------------------------
 
-_DEMO_NODES = [
-    {"dynamic_sentence_simple": "I want to become fluent in Spanish: agree",
-     "short_label": "Fluency goal", "rating": 5},
-    {"dynamic_sentence_simple": "I practice Spanish for 20 minutes every day: agree",
-     "short_label": "Daily practice", "rating": 5},
-    {"dynamic_sentence_simple": "A colleague has invited me to join a Spanish conversation group: agree",
-     "short_label": "Conversation group", "rating": 5},
-    {"dynamic_sentence_simple": "I enjoy practicing Spanish: disagree",
-     "short_label": "Enjoy practicing", "rating": 2},
-    {"dynamic_sentence_simple": "I feel self-conscious when speaking Spanish in front of others: agree",
-     "short_label": "Self-conscious", "rating": 5},
-]
+def get_demo_nodes():
+    """Load demo nodes from the study config."""
+    from .config_loader import get_config
+    return get_config().get("demo_nodes", [])

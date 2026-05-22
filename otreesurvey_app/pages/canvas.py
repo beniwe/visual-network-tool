@@ -2,7 +2,7 @@ import json
 from otree.api import Page
 
 from ..helpers import (
-    stamp, get_node_display_data, _node_color, _DEMO_NODES,
+    stamp, get_node_display_data, _node_color, get_demo_nodes,
     _CANVAS_CONDITIONS, _INTERVIEW_CONDITIONS, _SHORT_LABEL_CONDITIONS,
     _NOPREFIX_CONDITIONS,
 )
@@ -15,9 +15,9 @@ class MapVideoIntro(Page):
         demo_statements = [
             {
                 "text":  n["dynamic_sentence_simple"],
-                "color": _node_color(n["rating"]),
+                "color": _node_color(n.get("rating")),
             }
-            for n in _DEMO_NODES
+            for n in get_demo_nodes()
         ]
         return dict(demo_statements=demo_statements, own_statements_colored=demo_statements)
 

@@ -1,7 +1,7 @@
 import json
 from otree.api import Page
 
-from ..helpers import stamp, _DEMO_NODES, _INTERVIEW_CONDITIONS
+from ..helpers import stamp, get_demo_nodes, _INTERVIEW_CONDITIONS
 from ..constants import C
 
 
@@ -54,8 +54,9 @@ class ConditionSelector(Page):
         if not player.field_maybe_none('condition'):
             player.condition = 'color_tag'
         if player.field_maybe_none('condition') == 'demo':
-            player.final_nodes = json.dumps(_DEMO_NODES)
-            player.num_nodes = len(_DEMO_NODES)
+            demo = get_demo_nodes()
+            player.final_nodes = json.dumps(demo)
+            player.num_nodes = len(demo)
 
 
 class LinkCompletion(Page):
