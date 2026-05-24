@@ -6,7 +6,7 @@ from .pages import (
     Consent, ConditionSelector, LinkNoConsent, LinkCompletion, LinkFailedChecks,
     Information, InterviewMain, ConversationFeedback,
     DynamicBeliefRating,
-    MapVideoIntro, MapIntro, MapNodePlacement, MapEdgePos, MapEdgeNeg,
+    MapVideoIntro, MapIntro, MapNodePlacement, MapEdgePage,
     CanvasFeedback, Feedback,
 )
 
@@ -46,10 +46,17 @@ class Player(BasePlayer):
     num_nodes = models.IntegerField(initial=0)
 
     positions_1 = models.LongStringField(blank=True)
+
+    # Legacy edge fields (kept for backward compat with existing sessions)
     positions_2 = models.LongStringField(blank=True)
     positions_3 = models.LongStringField(blank=True)
     edges_2 = models.LongStringField(blank=True)
     edges_3 = models.LongStringField(blank=True)
+
+    # Generic edge page fields — temp fields overwritten each page,
+    # then copied to indexed storage in before_next_page
+    _edge_positions_tmp = models.LongStringField(blank=True)
+    _edge_data_tmp = models.LongStringField(blank=True)
 
     conversation_json = models.LongStringField(initial="[]")
     current_answer = models.LongStringField(blank=True)
@@ -135,6 +142,10 @@ for i in range(C.MAX_BELIEF_ITEMS):
     setattr(Player, f"belief_accuracy_{i}", models.IntegerField(blank=True))
     setattr(Player, f"belief_relevance_{i}", models.IntegerField(blank=True))
 
+for i in range(C.MAX_EDGE_PAGES):
+    setattr(Player, f"edge_positions_{i}", models.LongStringField(blank=True))
+    setattr(Player, f"edge_data_{i}", models.LongStringField(blank=True))
+
 
 page_sequence = [
     Consent,
@@ -147,8 +158,7 @@ page_sequence = [
     MapVideoIntro,
     MapIntro,
     MapNodePlacement,
-    MapEdgePos,
-    MapEdgeNeg,
+    *[MapEdgePage for _ in range(C.MAX_EDGE_PAGES)],
     CanvasFeedback,
     Feedback,
     LinkCompletion,

@@ -68,20 +68,22 @@
       together. Try to use the whole box for this task and avoid placing all
       statements on top of each other.
     </li>
+    {% for et in edge_types %}
     <li>
-      Draw <span class="chip chip-purple">supporting</span>
-      <b>connections</b> between statements. For example if they reinforce or
-      encourage each other. You will indicate how clear or strong each
+      Draw
+      <span class="chip" style="background: {{ et.color }}22; border-color: {{ et.color }}; color: {{ et.color }};">{{ et.label }}</span>
+      <b>connections</b> between statements. For example if {{ et.description }}.
+      {% if et.is_first %}
+      You will indicate how clear or strong each
       connection is on a scale. You can use high ratings for connections that
       feel very clear and strong to you, and low ratings for connections that
       you still feel but are more uncertain about.
+      {% else %}
+      You will indicate how clear or strong each
+      connection is on a scale, as with the previous connections.
+      {% endif %}
     </li>
-    <li>
-      Draw <span class="chip chip-orange">conflicting</span>
-      <b>connections</b> between statements. For example if they undermine or
-      contradict each other. You will indicate how clear or strong each
-      connection is on a scale, as with the supporting connections.
-    </li>
+    {% endfor %}
   </ol>
 </div>
 

@@ -226,17 +226,23 @@
     "edges": [
       {
         "id": "positive",
-        "label": "Positive influence",
-        "color": "#2ca02c",
+        "label": "Supporting",
+        "color": "#7b62c1",
         "directed": false,
-        "show_prior_edges": false
+        "show_prior_edges": false,
+        "verb": "support",
+        "strength_label": "How much support?",
+        "description": "one thing reinforces or encourages another"
       },
       {
         "id": "negative",
-        "label": "Negative influence",
-        "color": "#d62728",
+        "label": "Conflicting",
+        "color": "#c87a1a",
         "directed": false,
-        "show_prior_edges": true
+        "show_prior_edges": true,
+        "verb": "conflict with",
+        "strength_label": "How much conflict?",
+        "description": "one thing contradicts or undermines another"
       }
     ],
     "min_nodes": 3,

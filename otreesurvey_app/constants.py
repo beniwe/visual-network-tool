@@ -6,6 +6,7 @@ class C(BaseConstants):
     PLAYERS_PER_GROUP = None
     NUM_ROUNDS = 1
     MAX_TURNS = 20          # page slot ceiling — actual turns from config
+    MAX_EDGE_PAGES = 10     # page slot ceiling for edge types
     MAX_BELIEF_ITEMS = 30
     NUM_NODES_THRESHOLD = 3
     NUM_NODES_MAX = 10

@@ -12,6 +12,8 @@ from ..constants import C
 class MapVideoIntro(Page):
     @staticmethod
     def vars_for_template(player):
+        from ..config_loader import get_config
+        edge_types = get_config()["canvas"]["edges"]
         demo_statements = [
             {
                 "text":  n["dynamic_sentence_simple"],
@@ -19,7 +21,15 @@ class MapVideoIntro(Page):
             }
             for n in get_demo_nodes()
         ]
-        return dict(demo_statements=demo_statements, own_statements_colored=demo_statements)
+        edge_types_display = [
+            dict(et, is_first=(i == 0))
+            for i, et in enumerate(edge_types)
+        ]
+        return dict(
+            demo_statements=demo_statements,
+            own_statements_colored=demo_statements,
+            edge_types=edge_types_display,
+        )
 
     @staticmethod
     def is_displayed(player):
@@ -37,6 +47,8 @@ class MapVideoIntro(Page):
 class MapIntro(Page):
     @staticmethod
     def vars_for_template(player):
+        from ..config_loader import get_config
+        edge_types = get_config()["canvas"]["edges"]
         nodes = json.loads(player.final_nodes or "[]")
         cond = player.field_maybe_none('condition') or ''
         noprefix = cond in _NOPREFIX_CONDITIONS
@@ -60,6 +72,18 @@ class MapIntro(Page):
         show_transcript = cond in _INTERVIEW_CONDITIONS
         qa_pairs = json.loads(player.conversation_json or "[]") if show_transcript else []
 
+        # Build edge type chip HTML for the intro text
+        chips = [
+            '<span class="chip chip-edge" style="background:{c}22;border-color:{c};color:{c}">{l}</span>'.format(
+                c=et["color"], l=et["label"],
+            )
+            for et in edge_types
+        ]
+        if len(chips) > 1:
+            edge_chips_html = ', '.join(chips[:-1]) + ' and ' + chips[-1]
+        else:
+            edge_chips_html = chips[0] if chips else ''
+
         return dict(
             transcript=qa_pairs,
             show_transcript=show_transcript,
@@ -67,6 +91,7 @@ class MapIntro(Page):
             own_statements_colored=own_statements_colored,
             noprefix=noprefix,
             is_demo=cond == 'demo',
+            edge_chips_html=edge_chips_html,
         )
 
     @staticmethod
@@ -112,92 +137,99 @@ class MapNodePlacement(Page):
         stamp(player, 'self_map:submit')
 
 
-class MapEdgePos(Page):
+class MapEdgePage(Page):
+    """Generic edge-drawing page, repeated once per edge type in study_config.
+
+    Uses ``participant.vars["_edge_page_counter"]`` to track which edge type
+    is being shown.  Form data goes through temp fields and gets copied to
+    indexed storage (``edge_positions_N`` / ``edge_data_N``) in
+    ``before_next_page``.
+    """
     form_model = 'player'
-    form_fields = ['positions_2', 'edges_2']
+    form_fields = ['_edge_positions_tmp', '_edge_data_tmp']
+    template_name = 'otreesurvey_app/MapEdge.html'
 
     @staticmethod
     def vars_for_template(player):
+        from ..config_loader import get_config
+        edge_types = get_config()["canvas"]["edges"]
+        idx = player.participant.vars.get('_edge_page_counter', 0)
+        edge_cfg = dict(edge_types[idx])
+        edge_cfg['label_lower'] = edge_cfg.get('label', '').lower()
+
         node_data = get_node_display_data(player)
-        positions = json.loads(player.positions_1 or '[]')
-        pos_by_belief = {p.get('full_label', p['label']): p for p in positions}
-        belief_points = [
-            {
-                "label":       nd["belief"],
-                "short_label": nd.get("short_label", ""),
-                "x":           pos_by_belief[nd["belief"]]['x'],
-                "y":           pos_by_belief[nd["belief"]]['y'],
-                "radius":      nd["radius"],
-                "color":       nd["color"],
-            }
-            for nd in node_data
-        ]
-        cond = player.field_maybe_none('condition') or ''
-        show_transcript = cond in _INTERVIEW_CONDITIONS
-        qa_pairs = json.loads(player.conversation_json or "[]") if show_transcript else []
-        return dict(
-            belief_points=belief_points,
-            short_labels="true" if cond in _SHORT_LABEL_CONDITIONS else "false",
-            belief_edges_json=json.dumps([]),
-            transcript=qa_pairs,
-            show_transcript=show_transcript,
-        )
 
-    @staticmethod
-    def is_displayed(player):
-        return (
-            player.num_nodes >= C.NUM_NODES_THRESHOLD
-            and player.consent_given
-            and player.field_maybe_none('condition') in _CANVAS_CONDITIONS
-        )
-
-    @staticmethod
-    def before_next_page(player, timeout_happened):
-        stamp(player, 'self_edge_pos:submit')
-
-
-class MapEdgeNeg(Page):
-    form_model = 'player'
-    form_fields = ['positions_3', 'edges_3']
-
-    @staticmethod
-    def vars_for_template(player):
-        node_data = get_node_display_data(player)
-        positions = json.loads(player.positions_2 or '[]')
+        # Positions: from previous edge page, or from initial node placement
+        if idx > 0:
+            prev_pos = getattr(player, f'edge_positions_{idx - 1}', '') or ''
+            positions = json.loads(prev_pos) if prev_pos else []
+        else:
+            positions = []
         if not positions:
             positions = json.loads(player.positions_1 or '[]')
-        prior_edges = json.loads(player.edges_2 or '[]')
+
+        # Prior edges: gather from all preceding edge pages if configured
+        prior_edges = []
+        if edge_cfg.get('show_prior_edges', False):
+            for prev_idx in range(idx):
+                prev_data = getattr(player, f'edge_data_{prev_idx}', '') or ''
+                if prev_data:
+                    prior_edges.extend(json.loads(prev_data))
+
         pos_by_belief = {p.get('full_label', p['label']): p for p in positions}
         belief_points = [
             {
                 "label":       nd["belief"],
                 "short_label": nd.get("short_label", ""),
-                "x":           pos_by_belief[nd["belief"]]['x'],
-                "y":           pos_by_belief[nd["belief"]]['y'],
+                "x":           pos_by_belief.get(nd["belief"], {}).get('x', 100),
+                "y":           pos_by_belief.get(nd["belief"], {}).get('y', 100),
                 "radius":      nd["radius"],
                 "color":       nd["color"],
             }
             for nd in node_data
         ]
+
         cond = player.field_maybe_none('condition') or ''
         show_transcript = cond in _INTERVIEW_CONDITIONS
         qa_pairs = json.loads(player.conversation_json or "[]") if show_transcript else []
+
         return dict(
             belief_points=belief_points,
             short_labels="true" if cond in _SHORT_LABEL_CONDITIONS else "false",
             belief_edges_json=json.dumps(prior_edges),
             transcript=qa_pairs,
             show_transcript=show_transcript,
+            edge_type=edge_cfg,
+            edge_index=idx,
+            total_edge_types=len(edge_types),
         )
 
     @staticmethod
     def is_displayed(player):
+        from ..config_loader import get_config
+        edge_types = get_config()["canvas"]["edges"]
+        idx = player.participant.vars.get('_edge_page_counter', 0)
         return (
-            player.num_nodes >= C.NUM_NODES_THRESHOLD
+            idx < len(edge_types)
+            and player.num_nodes >= C.NUM_NODES_THRESHOLD
             and player.consent_given
             and player.field_maybe_none('condition') in _CANVAS_CONDITIONS
         )
 
     @staticmethod
     def before_next_page(player, timeout_happened):
-        stamp(player, 'self_edge_neg:submit')
+        from ..config_loader import get_config
+        edge_types = get_config()["canvas"]["edges"]
+        idx = player.participant.vars.get('_edge_page_counter', 0)
+        edge_id = edge_types[idx]["id"] if idx < len(edge_types) else str(idx)
+
+        # Copy temp data to persistent indexed fields
+        pos_tmp = player.field_maybe_none('_edge_positions_tmp') or ''
+        data_tmp = player.field_maybe_none('_edge_data_tmp') or ''
+        setattr(player, f'edge_positions_{idx}', pos_tmp)
+        setattr(player, f'edge_data_{idx}', data_tmp)
+        player._edge_positions_tmp = ''
+        player._edge_data_tmp = ''
+
+        stamp(player, f'edge_{edge_id}:submit')
+        player.participant.vars['_edge_page_counter'] = idx + 1

@@ -46,8 +46,7 @@
     color: #111;
     font-weight: 700;
   }
-  .chip-purple { background: #e9e3f5; }
-  .chip-orange { background: #fff1de; }
+  .chip-edge { font-weight: 700; }
   .chip-red    { background: #fde0d0; color: #b71c1c; border-color: #e57373; }
   .chip-green  { background: #d4edda; color: #1b5e20; border-color: #66bb6a; }
 </style>
@@ -56,26 +55,19 @@
 
 <div class="card">
   <p class="eyebrow">Next: working with your own statements</p>
-  {% if noprefix %}
   <p class="muted">
-    Thank you for completing the statements and rating how important each one is
-    to your meat-eating behavior. In the next steps, you will first
+    Thank you for completing the statements and rating how important each one is.
+    In the next steps, you will first
     <b>place</b> the statements based on how they go together for you personally.
-    Then you will create <span class="chip chip-purple">supporting</span> and
-    <span class="chip chip-orange">conflicting</span> connections between them.
-    The color of each circle shows how you rated it —
+    Then you will create
+    {{ edge_chips_html }}
+    connections between them.
+    {% if noprefix %}
+    The color of each circle shows how you rated it &mdash;
     <span class="chip chip-red">disagree</span> or
     <span class="chip chip-green">agree</span>.
+    {% endif %}
   </p>
-  {% else %}
-  <p class="muted">
-    Thank you for completing the statements and rating how important each one is
-    to your meat-eating behavior. In the next steps, you will first
-    <b>place</b> the statements based on how they go together for you personally.
-    Then you will create <span class="chip chip-purple">supporting</span> and
-    <span class="chip chip-orange">conflicting</span> connections between them.
-  </p>
-  {% endif %}
 </div>
 
 {% if show_transcript %}
