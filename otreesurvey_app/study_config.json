@@ -249,6 +249,26 @@
     "max_nodes": 10
   },
 
+  "final_network": {
+    "enabled": true,
+    "questions": [
+      {
+        "id": "overall_accuracy",
+        "type": "scale",
+        "label": "How well does this network represent the way you think about meat-eating?",
+        "scale_min": 1,
+        "scale_max": 7,
+        "anchor_lo": "Not at all",
+        "anchor_hi": "Very well"
+      },
+      {
+        "id": "missing_anything",
+        "type": "text",
+        "label": "Is there anything important about your views on meat-eating that is missing from this network?"
+      }
+    ]
+  },
+
   "demo_nodes": [
     {
       "dynamic_sentence_simple": "I want to become fluent in Spanish: agree",

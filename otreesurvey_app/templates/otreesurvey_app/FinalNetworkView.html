@@ -1,0 +1,392 @@
+{% extends "global/Page.html" %} {% load static %} {% block scripts %}
+<script src="{% static 'otreesurvey_app/canvasflex.js' %}?v=20260409i"></script>
+{% endblock %} {% block styles %}
+<style>
+  .card {
+    border: 1px solid #e6e6e6;
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    margin: 0 auto 14px;
+    max-width: 960px;
+  }
+  .eyebrow {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #111;
+    margin: 0 0 6px;
+  }
+  .muted { color: #555; }
+
+  #canvasContainer {
+    position: relative;
+    width: 585px;
+    margin: 0 auto;
+  }
+  #networkCanvas {
+    border: 2px solid #111;
+    border-radius: 4px;
+    display: block;
+    width: 585px;
+    height: 585px;
+  }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin: 10px 0 0;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #333;
+  }
+  .legend-swatch {
+    width: 24px;
+    height: 4px;
+    border-radius: 2px;
+  }
+
+  .question-block {
+    margin: 14px 0;
+  }
+  .question-label {
+    font-weight: 700;
+    color: #111;
+    margin-bottom: 6px;
+  }
+  .scale-anchors {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: #666;
+    margin-bottom: 4px;
+  }
+  .likert-slider {
+    width: 100%;
+    height: 10px;
+    border-radius: 5px;
+    background: #e0e0e0;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+  }
+  .likert-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    background: #bbb;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    cursor: pointer;
+  }
+  .likert-slider::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    background: #bbb;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    cursor: pointer;
+  }
+  .likert-slider.active::-webkit-slider-thumb { background: #111; }
+  .likert-slider.active::-moz-range-thumb { background: #111; }
+  .readout {
+    font-size: 0.85rem;
+    color: #999;
+    min-height: 16px;
+  }
+
+  .open-text {
+    width: 100%;
+    min-height: 80px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 0.95rem;
+    resize: vertical;
+  }
+
+  .btn-primary {
+    background: #007bff;
+    color: #fff;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  #transcript-container {
+    display: none;
+    margin-bottom: 1rem;
+    border: 1px solid #e6e6e6;
+    padding: 1rem;
+    border-radius: 10px;
+    background: #f9f9f9;
+  }
+
+  #node-tooltip {
+    display: none;
+    position: fixed;
+    z-index: 999;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 0.85rem;
+    color: #111;
+    max-width: 260px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    pointer-events: none;
+  }
+</style>
+{% endblock %} {% block content %}
+
+<div class="card">
+  <p class="eyebrow">Your completed network</p>
+  <p class="muted">
+    This is the network you built from your statements and connections.
+    Please look at it carefully and answer the questions below.
+  </p>
+</div>
+
+{% if show_transcript %}
+<button type="button" id="toggle-transcript" class="btn-primary" style="margin-bottom: 1rem">
+  Show transcript
+</button>
+<div id="transcript-container">
+  <h3>Interview transcript</h3>
+  <ul style="list-style-type: none; padding: 0; margin: 0">
+    {% for pair in transcript %}
+    <li style="margin-bottom: 1rem">
+      <strong>Q:</strong> {{ pair.question }}<br />
+      <strong>A:</strong> {{ pair.answer }}
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<div class="card">
+  <div id="canvasContainer">
+    <div id="node-tooltip"></div>
+    <canvas id="networkCanvas" width="585" height="585"></canvas>
+  </div>
+  <div class="legend" id="edge-legend"></div>
+</div>
+
+<div class="card">
+  <p class="eyebrow">A few questions about your network</p>
+  <div id="questions-container"></div>
+</div>
+
+<input type="hidden" name="final_network_responses_json" id="final_network_responses_json" value="" />
+
+{{ next_button }}
+
+<script>
+  document.addEventListener("DOMContentLoaded", function(){
+    var canvas = document.getElementById("networkCanvas");
+    var ctx    = canvas.getContext("2d");
+
+    var priorPoints = {{ belief_points|safe }};
+    var allEdgesRaw = {{ all_edges_json|safe }};
+    var SHORT_LABELS = {{ short_labels }};
+    var QUESTIONS    = {{ questions_json|safe }};
+
+    // Build points array
+    var points = priorPoints.map(function(p){
+      return {
+        label:      SHORT_LABELS && p.short_label ? p.short_label : p.label,
+        full_label: p.label,
+        x:          p.x,
+        y:          p.y,
+        radius:     p.radius,
+        color:      p.color,
+      };
+    });
+
+    // Reconstruct edge objects with point references for drawing
+    var pointByLabel = {};
+    points.forEach(function(p){ pointByLabel[p.label] = p; pointByLabel[p.full_label] = p; });
+
+    var edges = [];
+    (allEdgesRaw || []).forEach(function(e){
+      var fromPt = pointByLabel[e.stance_1];
+      var toPt   = pointByLabel[e.stance_2];
+      if (fromPt && toPt) {
+        edges.push({
+          from:     fromPt,
+          to:       toPt,
+          polarity: e.polarity || "other",
+          strength: e.strength,
+        });
+      }
+    });
+
+    // Draw the network (read-only)
+    function drawNetwork(){
+      NoOverlap.drawGraph(ctx, canvas, { points: points, edges: edges });
+    }
+    drawNetwork();
+
+    // Tooltip on hover
+    var tooltip = document.getElementById("node-tooltip");
+    canvas.addEventListener("mousemove", function(ev){
+      var rect = canvas.getBoundingClientRect();
+      var pos = { x: ev.clientX - rect.left, y: ev.clientY - rect.top };
+      var hit = NoOverlap.findPoint(pos, points);
+      if (SHORT_LABELS && hit && hit.full_label) {
+        tooltip.textContent = hit.full_label;
+        tooltip.style.display = "block";
+        tooltip.style.left = (ev.clientX + 14) + "px";
+        tooltip.style.top  = (ev.clientY - 10) + "px";
+      } else {
+        tooltip.style.display = "none";
+      }
+    });
+    canvas.addEventListener("mouseleave", function(){ tooltip.style.display = "none"; });
+
+    // Build edge legend
+    var legendEl = document.getElementById("edge-legend");
+    var legendData = {{ edge_legend|safe }};
+    legendData.forEach(function(item){
+      var div = document.createElement("div");
+      div.className = "legend-item";
+      var swatch = document.createElement("span");
+      swatch.className = "legend-swatch";
+      swatch.style.background = item.color;
+      var label = document.createElement("span");
+      label.textContent = item.label;
+      div.appendChild(swatch);
+      div.appendChild(label);
+      legendEl.appendChild(div);
+    });
+
+    // Build questions
+    var container = document.getElementById("questions-container");
+    var responses = {};
+    var touched = {};
+
+    QUESTIONS.forEach(function(q, i){
+      var block = document.createElement("div");
+      block.className = "question-block";
+
+      var label = document.createElement("p");
+      label.className = "question-label";
+      label.textContent = q.label;
+      block.appendChild(label);
+
+      if (q.type === "scale") {
+        var anchors = document.createElement("div");
+        anchors.className = "scale-anchors";
+        anchors.innerHTML = "<span>" + (q.anchor_lo || "") + "</span><span>" + (q.anchor_hi || "") + "</span>";
+        block.appendChild(anchors);
+
+        var slider = document.createElement("input");
+        slider.type = "range";
+        slider.className = "likert-slider";
+        slider.min = q.scale_min || 1;
+        slider.max = q.scale_max || 7;
+        slider.step = 1;
+        slider.value = Math.ceil(((q.scale_min || 1) + (q.scale_max || 7)) / 2);
+        slider.style.background = "#e0e0e0";
+        block.appendChild(slider);
+
+        var readout = document.createElement("div");
+        readout.className = "readout";
+        readout.textContent = "Please move the slider";
+        block.appendChild(readout);
+
+        var qId = q.id;
+        var sMin = q.scale_min || 1;
+        var sMax = q.scale_max || 7;
+
+        function paintSlider(sl, val, mn, mx) {
+          var pct = ((val - mn) / (mx - mn)) * 100;
+          sl.style.background = "linear-gradient(to right, #424242 0%, #424242 " + pct + "%, #e0e0e0 " + pct + "%, #e0e0e0 100%)";
+        }
+
+        (function(sl, rd, qid, mn, mx){
+          function activate(){
+            touched[qid] = true;
+            sl.classList.add("active");
+            var v = Number(sl.value);
+            paintSlider(sl, v, mn, mx);
+            rd.innerHTML = "Selected: <b>" + v + "</b> / " + mx;
+            rd.style.color = "#111";
+            responses[qid] = v;
+            updateNext();
+          }
+          sl.addEventListener("pointerdown", activate);
+          sl.addEventListener("input", function(){
+            if (touched[qid]) {
+              var v = Number(sl.value);
+              paintSlider(sl, v, mn, mx);
+              rd.innerHTML = "Selected: <b>" + v + "</b> / " + mx;
+              responses[qid] = v;
+            }
+          });
+        })(slider, readout, qId, sMin, sMax);
+
+      } else if (q.type === "text") {
+        var textarea = document.createElement("textarea");
+        textarea.className = "open-text";
+        textarea.placeholder = "Type your answer here...";
+        block.appendChild(textarea);
+
+        (function(ta, qid){
+          touched[qid] = true; // text is optional, count as touched
+          ta.addEventListener("input", function(){
+            responses[qid] = ta.value;
+          });
+          responses[qid] = "";
+        })(textarea, q.id);
+      }
+
+      container.appendChild(block);
+    });
+
+    // Track required touches (only scale questions are required)
+    var requiredCount = QUESTIONS.filter(function(q){ return q.type === "scale"; }).length;
+
+    function updateNext(){
+      var btn = document.querySelector(".otree-btn-next");
+      if (!btn) return;
+      var touchedCount = QUESTIONS.filter(function(q){
+        return q.type === "scale" && touched[q.id];
+      }).length;
+      var ok = touchedCount >= requiredCount;
+      btn.disabled = !ok;
+      btn.style.opacity = ok ? "1" : "0.5";
+      btn.style.pointerEvents = ok ? "auto" : "none";
+    }
+    updateNext();
+
+    // Serialize on submit
+    document.querySelector("form").addEventListener("submit", function(){
+      document.getElementById("final_network_responses_json").value = JSON.stringify(responses);
+    });
+
+    // Transcript toggle
+    var toggle = document.getElementById("toggle-transcript");
+    var transcriptEl = document.getElementById("transcript-container");
+    if (toggle && transcriptEl){
+      toggle.addEventListener("click", function(){
+        var hidden = transcriptEl.style.display === "none" || transcriptEl.style.display === "";
+        transcriptEl.style.display = hidden ? "block" : "none";
+        toggle.textContent = hidden ? "Hide transcript" : "Show transcript";
+      });
+    }
+  });
+</script>
+
+{% endblock %}

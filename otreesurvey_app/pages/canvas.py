@@ -146,7 +146,7 @@ class MapEdgePage(Page):
     ``before_next_page``.
     """
     form_model = 'player'
-    form_fields = ['_edge_positions_tmp', '_edge_data_tmp']
+    form_fields = ['edge_positions_tmp', 'edge_data_tmp']
     template_name = 'otreesurvey_app/MapEdge.html'
 
     @staticmethod
@@ -161,18 +161,18 @@ class MapEdgePage(Page):
 
         # Positions: from previous edge page, or from initial node placement
         if idx > 0:
-            prev_pos = getattr(player, f'edge_positions_{idx - 1}', '') or ''
+            prev_pos = player.field_maybe_none(f'edge_positions_{idx - 1}') or ''
             positions = json.loads(prev_pos) if prev_pos else []
         else:
             positions = []
         if not positions:
-            positions = json.loads(player.positions_1 or '[]')
+            positions = json.loads(player.field_maybe_none('positions_1') or '[]')
 
         # Prior edges: gather from all preceding edge pages if configured
         prior_edges = []
         if edge_cfg.get('show_prior_edges', False):
             for prev_idx in range(idx):
-                prev_data = getattr(player, f'edge_data_{prev_idx}', '') or ''
+                prev_data = player.field_maybe_none(f'edge_data_{prev_idx}') or ''
                 if prev_data:
                     prior_edges.extend(json.loads(prev_data))
 
@@ -224,12 +224,95 @@ class MapEdgePage(Page):
         edge_id = edge_types[idx]["id"] if idx < len(edge_types) else str(idx)
 
         # Copy temp data to persistent indexed fields
-        pos_tmp = player.field_maybe_none('_edge_positions_tmp') or ''
-        data_tmp = player.field_maybe_none('_edge_data_tmp') or ''
+        pos_tmp = player.field_maybe_none('edge_positions_tmp') or ''
+        data_tmp = player.field_maybe_none('edge_data_tmp') or ''
         setattr(player, f'edge_positions_{idx}', pos_tmp)
         setattr(player, f'edge_data_{idx}', data_tmp)
-        player._edge_positions_tmp = ''
-        player._edge_data_tmp = ''
+        player.edge_positions_tmp = ''
+        player.edge_data_tmp = ''
 
         stamp(player, f'edge_{edge_id}:submit')
         player.participant.vars['_edge_page_counter'] = idx + 1
+
+
+class FinalNetworkView(Page):
+    """Read-only view of the completed network with configurable questions."""
+    form_model = 'player'
+    form_fields = ['final_network_responses_json']
+
+    @staticmethod
+    def vars_for_template(player):
+        from ..config_loader import get_config
+        cfg = get_config()
+        edge_types = cfg["canvas"]["edges"]
+        final_cfg = cfg.get("final_network", {})
+        questions = final_cfg.get("questions", [])
+
+        node_data = get_node_display_data(player)
+
+        # Get final positions from the last edge page
+        num_edge_types = len(edge_types)
+        positions = []
+        for idx in range(num_edge_types - 1, -1, -1):
+            pos_raw = player.field_maybe_none(f'edge_positions_{idx}') or ''
+            if pos_raw:
+                positions = json.loads(pos_raw)
+                break
+        if not positions:
+            positions = json.loads(player.field_maybe_none('positions_1') or '[]')
+
+        # Gather all edges from all edge pages
+        all_edges = []
+        for idx in range(num_edge_types):
+            data_raw = player.field_maybe_none(f'edge_data_{idx}') or ''
+            if data_raw:
+                all_edges.extend(json.loads(data_raw))
+
+        # Build positioned nodes with final coordinates
+        pos_by_belief = {p.get('full_label', p['label']): p for p in positions}
+        belief_points = [
+            {
+                "label":       nd["belief"],
+                "short_label": nd.get("short_label", ""),
+                "x":           pos_by_belief.get(nd["belief"], {}).get('x', 100),
+                "y":           pos_by_belief.get(nd["belief"], {}).get('y', 100),
+                "radius":      nd["radius"],
+                "color":       nd["color"],
+            }
+            for nd in node_data
+        ]
+
+        # Build edge legend from config
+        edge_legend = [
+            {"label": et["label"], "color": et["color"]}
+            for et in edge_types
+        ]
+
+        cond = player.field_maybe_none('condition') or ''
+        show_transcript = cond in _INTERVIEW_CONDITIONS
+        qa_pairs = json.loads(player.conversation_json or "[]") if show_transcript else []
+
+        return dict(
+            belief_points=belief_points,
+            all_edges_json=json.dumps(all_edges),
+            short_labels="true" if cond in _SHORT_LABEL_CONDITIONS else "false",
+            edge_legend=edge_legend,
+            questions_json=json.dumps(questions),
+            transcript=qa_pairs,
+            show_transcript=show_transcript,
+        )
+
+    @staticmethod
+    def is_displayed(player):
+        from ..config_loader import get_config
+        final_cfg = get_config().get("final_network", {})
+        return (
+            final_cfg.get("enabled", False)
+            and player.num_nodes >= C.NUM_NODES_THRESHOLD
+            and player.consent_given
+            and player.field_maybe_none('condition') in _CANVAS_CONDITIONS
+        )
+
+    @staticmethod
+    def before_next_page(player, timeout_happened):
+        stamp(player, 'final_network:submit')

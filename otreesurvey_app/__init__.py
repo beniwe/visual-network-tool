@@ -7,6 +7,7 @@ from .pages import (
     Information, InterviewMain, ConversationFeedback,
     DynamicBeliefRating,
     MapVideoIntro, MapIntro, MapNodePlacement, MapEdgePage,
+    FinalNetworkView,
     CanvasFeedback, Feedback,
 )
 
@@ -55,8 +56,8 @@ class Player(BasePlayer):
 
     # Generic edge page fields — temp fields overwritten each page,
     # then copied to indexed storage in before_next_page
-    _edge_positions_tmp = models.LongStringField(blank=True)
-    _edge_data_tmp = models.LongStringField(blank=True)
+    edge_positions_tmp = models.LongStringField(blank=True)
+    edge_data_tmp = models.LongStringField(blank=True)
 
     conversation_json = models.LongStringField(initial="[]")
     current_answer = models.LongStringField(blank=True)
@@ -136,6 +137,7 @@ class Player(BasePlayer):
     )
 
     dynamic_belief_ratings_json = models.LongStringField(blank=True)
+    final_network_responses_json = models.LongStringField(blank=True)
 
 
 for i in range(C.MAX_BELIEF_ITEMS):
@@ -159,6 +161,7 @@ page_sequence = [
     MapIntro,
     MapNodePlacement,
     *[MapEdgePage for _ in range(C.MAX_EDGE_PAGES)],
+    FinalNetworkView,
     CanvasFeedback,
     Feedback,
     LinkCompletion,
