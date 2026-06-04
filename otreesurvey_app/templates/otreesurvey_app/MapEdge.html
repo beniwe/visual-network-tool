@@ -346,6 +346,7 @@
 
     // Config from server
     const EDGE_TYPE_ID   = "{{ edge_type.id }}";
+    const EDGE_COLOR     = "{{ edge_type.color }}";
     const EDGE_VERB      = "{{ edge_type.verb }}";
     const EDGE_VERB_NOUN = "{{ edge_type.verb }}s";
 
@@ -433,6 +434,7 @@
       edges.push({
         from: from, to: to,
         polarity: EDGE_TYPE_ID,
+        color: EDGE_COLOR,
         strength: pendingStrength,
         timestamp: new Date().toISOString(),
         nudge_level: nudgeLevel
@@ -607,6 +609,7 @@
         stance_1:    e.stance_1  || (e.from && e.from.label ? e.from.label : e.from),
         stance_2:    e.stance_2  || (e.to   && e.to.label   ? e.to.label   : e.to),
         polarity:    e.polarity  || EDGE_TYPE_ID,
+        color:       e.color     || EDGE_COLOR,
         strength:    e.strength  != null ? e.strength : null,
         timestamp:   e.timestamp || null,
         nudge_level: e.nudge_level || 0,

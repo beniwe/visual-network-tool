@@ -121,10 +121,11 @@ class Player(BasePlayer):
     exit_url = models.StringField(blank=True)
 
     canvas_difficulty_placement = models.IntegerField(blank=True)
-    canvas_difficulty_pos = models.IntegerField(blank=True)
-    canvas_difficulty_neg = models.IntegerField(blank=True)
+    canvas_difficulty_pos = models.IntegerField(blank=True)       # legacy
+    canvas_difficulty_neg = models.IntegerField(blank=True)       # legacy
     canvas_clarity_statements = models.IntegerField(blank=True)
     canvas_usability_comment = models.LongStringField(blank=True)
+    canvas_edge_difficulty_json = models.LongStringField(blank=True)
 
     condition = models.StringField(
         choices=[

@@ -106,7 +106,7 @@
     to us.
   </p>
 
-  <!-- 1. Arranging statements -->
+  <!-- Placement difficulty (fixed) -->
   <div class="fb-item">
     <div class="fb-label">How easy or difficult was it to <b>arrange the statements</b> on the map?</div>
     <div class="scale-anchors"><span>Very difficult</span><span>Very easy</span></div>
@@ -115,25 +115,10 @@
     <input type="hidden" name="canvas_difficulty_placement" id="canvas_difficulty_placement">
   </div>
 
-  <!-- 2. Supporting connections -->
-  <div class="fb-item">
-    <div class="fb-label">How easy or difficult was it to draw <b>supporting connections</b>?</div>
-    <div class="scale-anchors"><span>Very difficult</span><span>Very easy</span></div>
-    <input type="range" class="fb-slider" id="sl_pos" min="1" max="7" step="1" value="4">
-    <div class="fb-readout" id="rd_pos">Please move the slider</div>
-    <input type="hidden" name="canvas_difficulty_pos" id="canvas_difficulty_pos">
-  </div>
+  <!-- Edge-type difficulty questions (dynamic) -->
+  <div id="edge-difficulty-container"></div>
 
-  <!-- 3. Conflicting connections -->
-  <div class="fb-item">
-    <div class="fb-label">How easy or difficult was it to draw <b>conflicting connections</b>?</div>
-    <div class="scale-anchors"><span>Very difficult</span><span>Very easy</span></div>
-    <input type="range" class="fb-slider" id="sl_neg" min="1" max="7" step="1" value="4">
-    <div class="fb-readout" id="rd_neg">Please move the slider</div>
-    <input type="hidden" name="canvas_difficulty_neg" id="canvas_difficulty_neg">
-  </div>
-
-  <!-- 4. Statement clarity -->
+  <!-- Statement clarity (fixed) -->
   <div class="fb-item">
     <div class="fb-label">How <b>clear and understandable</b> were the statements themselves?</div>
     <div class="scale-anchors"><span>Not at all clear</span><span>Completely clear</span></div>
@@ -149,68 +134,129 @@
     placeholder="e.g. something was confusing, something did not work..."></textarea>
 </div>
 
+<input type="hidden" name="canvas_edge_difficulty_json" id="canvas_edge_difficulty_json" value="">
+
 <div id="error-msg" style="display:none; color:red; margin-bottom:1rem; font-weight:700;">
-  Please answer all four questions before continuing.
+  Please answer all questions before continuing.
 </div>
 
 {{ next_button }}
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  const ITEMS = [
-    { slider: 'sl_placement', readout: 'rd_placement', hidden: 'canvas_difficulty_placement' },
-    { slider: 'sl_pos',       readout: 'rd_pos',       hidden: 'canvas_difficulty_pos'       },
-    { slider: 'sl_neg',       readout: 'rd_neg',       hidden: 'canvas_difficulty_neg'       },
-    { slider: 'sl_clarity',   readout: 'rd_clarity',   hidden: 'canvas_clarity_statements'   },
-  ];
+  var EDGE_TYPES = {{ edge_types_json|safe }};
 
-  const DIFFICULTY_LABELS = {
+  var DIFFICULTY_LABELS = {
     1: 'Very difficult', 2: 'Difficult', 3: 'Somewhat difficult',
     4: 'Neutral', 5: 'Somewhat easy', 6: 'Easy', 7: 'Very easy',
   };
-  const CLARITY_LABELS = {
+  var CLARITY_LABELS = {
     1: 'Not at all clear', 2: 'Slightly clear', 3: 'Somewhat clear',
     4: 'Moderately clear', 5: 'Mostly clear', 6: 'Very clear', 7: 'Completely clear',
   };
 
-  const touched = new Set();
+  var touched = {};
+  var edgeDifficulty = {};
 
   function paintFromLeft(slider, value) {
-    const pct = ((value - 1) / 6) * 100;
+    var pct = ((value - 1) / 6) * 100;
     slider.style.background =
-      `linear-gradient(to right, #424242 0%, #424242 ${pct}%, #e0e0e0 ${pct}%, #e0e0e0 100%)`;
+      'linear-gradient(to right, #424242 0%, #424242 ' + pct + '%, #e0e0e0 ' + pct + '%, #e0e0e0 100%)';
   }
 
-  ITEMS.forEach(function (cfg, idx) {
-    const slider  = document.getElementById(cfg.slider);
-    const readout = document.getElementById(cfg.readout);
-    const hidden  = document.getElementById(cfg.hidden);
-    const isClarity = (cfg.slider === 'sl_clarity');
-    const LABELS = isClarity ? CLARITY_LABELS : DIFFICULTY_LABELS;
+  // Wire up the two fixed sliders (placement + clarity)
+  var fixedItems = [
+    { slider: 'sl_placement', readout: 'rd_placement', hidden: 'canvas_difficulty_placement', labels: DIFFICULTY_LABELS, key: 'placement' },
+    { slider: 'sl_clarity',   readout: 'rd_clarity',   hidden: 'canvas_clarity_statements',   labels: CLARITY_LABELS,    key: 'clarity' },
+  ];
+
+  fixedItems.forEach(function(cfg) {
+    var slider  = document.getElementById(cfg.slider);
+    var readout = document.getElementById(cfg.readout);
+    var hidden  = document.getElementById(cfg.hidden);
 
     function activate() {
       slider.classList.add('active');
-      const v = Number(slider.value);
+      var v = Number(slider.value);
       paintFromLeft(slider, v);
-      readout.textContent = LABELS[v];
+      readout.textContent = cfg.labels[v];
       readout.style.color = '#111';
       hidden.value = v;
-      touched.add(idx);
+      touched[cfg.key] = true;
       updateNext();
     }
-
     slider.addEventListener('pointerdown', activate);
-    slider.addEventListener('input', function () {
+    slider.addEventListener('input', function() {
       if (slider.classList.contains('active')) {
-        const v = Number(slider.value);
+        var v = Number(slider.value);
         paintFromLeft(slider, v);
-        readout.textContent = LABELS[v];
+        readout.textContent = cfg.labels[v];
         hidden.value = v;
       }
     });
   });
 
-  const nextBtn = document.getElementById('nextButton') || document.querySelector('.otree-btn-next');
+  // Generate edge-type difficulty sliders dynamically
+  var edgeContainer = document.getElementById('edge-difficulty-container');
+
+  EDGE_TYPES.forEach(function(et, i) {
+    var item = document.createElement('div');
+    item.className = 'fb-item';
+
+    var label = document.createElement('div');
+    label.className = 'fb-label';
+    label.innerHTML = 'How easy or difficult was it to draw <b>' + et.label.toLowerCase() + ' connections</b>?';
+    item.appendChild(label);
+
+    var anchors = document.createElement('div');
+    anchors.className = 'scale-anchors';
+    anchors.innerHTML = '<span>Very difficult</span><span>Very easy</span>';
+    item.appendChild(anchors);
+
+    var slider = document.createElement('input');
+    slider.type = 'range';
+    slider.className = 'fb-slider';
+    slider.min = 1;
+    slider.max = 7;
+    slider.step = 1;
+    slider.value = 4;
+    item.appendChild(slider);
+
+    var readout = document.createElement('div');
+    readout.className = 'fb-readout';
+    readout.textContent = 'Please move the slider';
+    item.appendChild(readout);
+
+    edgeContainer.appendChild(item);
+
+    var edgeId = et.id;
+    (function(sl, rd, eid) {
+      function activate() {
+        sl.classList.add('active');
+        var v = Number(sl.value);
+        paintFromLeft(sl, v);
+        rd.textContent = DIFFICULTY_LABELS[v];
+        rd.style.color = '#111';
+        edgeDifficulty[eid] = v;
+        touched['edge_' + eid] = true;
+        updateNext();
+      }
+      sl.addEventListener('pointerdown', activate);
+      sl.addEventListener('input', function() {
+        if (sl.classList.contains('active')) {
+          var v = Number(sl.value);
+          paintFromLeft(sl, v);
+          rd.textContent = DIFFICULTY_LABELS[v];
+          edgeDifficulty[eid] = v;
+        }
+      });
+    })(slider, readout, edgeId);
+  });
+
+  // Required: placement + clarity + one per edge type
+  var requiredCount = 2 + EDGE_TYPES.length;
+
+  var nextBtn = document.getElementById('nextButton') || document.querySelector('.otree-btn-next');
   if (nextBtn) {
     nextBtn.disabled = true;
     nextBtn.style.opacity = '0.5';
@@ -219,19 +265,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function updateNext() {
     if (!nextBtn) return;
-    const ok = touched.size >= ITEMS.length;
+    var count = 0;
+    for (var k in touched) { if (touched[k]) count++; }
+    var ok = count >= requiredCount;
     nextBtn.disabled = !ok;
     nextBtn.style.opacity = ok ? '1' : '0.5';
     nextBtn.style.pointerEvents = ok ? 'auto' : 'none';
     if (ok) document.getElementById('error-msg').style.display = 'none';
   }
 
-  document.querySelector('form').addEventListener('submit', function (e) {
-    if (touched.size < ITEMS.length) {
+  document.querySelector('form').addEventListener('submit', function(e) {
+    var count = 0;
+    for (var k in touched) { if (touched[k]) count++; }
+    if (count < requiredCount) {
       e.preventDefault();
       document.getElementById('error-msg').style.display = 'block';
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
     }
+    document.getElementById('canvas_edge_difficulty_json').value = JSON.stringify(edgeDifficulty);
   });
 });
 </script>

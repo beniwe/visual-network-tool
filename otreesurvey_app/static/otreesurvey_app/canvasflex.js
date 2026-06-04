@@ -224,10 +224,12 @@
       ctx.moveTo(edge.from.x, edge.from.y);
       ctx.lineTo(edge.to.x, edge.to.y);
 
-      if (edge.polarity === 'negative') {
+      if (edge.color) {
+        ctx.strokeStyle = edge.color;
+      } else if (edge.polarity === 'negative') {
         ctx.strokeStyle = e.negative;
       } else if (edge.polarity === 'other') {
-        ctx.strokeStyle = e.other || '#666666'; // default grey if not passed
+        ctx.strokeStyle = e.other || '#666666';
       } else {
         ctx.strokeStyle = e.positive;
       }
