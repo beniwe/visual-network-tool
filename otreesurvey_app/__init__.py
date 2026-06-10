@@ -1,5 +1,6 @@
 from otree.api import *
 import json
+import sys
 
 from .constants import C
 from .pages import (
@@ -10,6 +11,29 @@ from .pages import (
     FinalNetworkView,
     CanvasFeedback, Feedback,
 )
+
+
+# ---------------------------------------------------------------------------
+# Inject /api/study-config route into the oTree Starlette app.
+# oTree v6 has no EXTENSION_APPS mechanism, so we use a one-shot import hook
+# that fires right after otree.asgi finishes initialisation.
+# ---------------------------------------------------------------------------
+class _ConfigRouteHook:
+    def find_module(self, name, path=None):
+        return self if name == 'otree.asgi' else None
+
+    def load_module(self, name):
+        sys.meta_path.remove(self)
+        import importlib
+        mod = importlib.import_module(name)
+        from starlette.routing import Route
+        from .config_admin import ConfigAPIEndpoint
+        mod.app.routes.insert(-3, Route(
+            '/api/study-config', ConfigAPIEndpoint, name='ConfigAPI',
+        ))
+        return mod
+
+sys.meta_path.insert(0, _ConfigRouteHook())
 
 doc = """
 Visual Network Tool — configurable belief-network experiment.
