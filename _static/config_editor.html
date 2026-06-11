@@ -38,18 +38,23 @@
   .help { font-size: 12px; color: #6c757d; margin-top: 2px; }
 
   .list-controls { margin-bottom: 8px; }
-  .list-item { border: 1px solid #e0e0e0; border-radius: 4px; padding: 12px; margin-bottom: 8px; background: #fafafa; position: relative; }
+  .list-item { border: 1px solid #e0e0e0; border-radius: 4px; padding: 12px 80px 12px 12px; margin-bottom: 8px; background: #fafafa; position: relative; }
   .list-item .remove-btn { position: absolute; top: 8px; right: 8px; }
 
   .checkbox-row { display: flex; align-items: center; gap: 6px; margin-top: 12px; }
   .checkbox-row input[type="checkbox"] { width: auto; }
   .checkbox-row label { margin: 0; }
 
-  .json-section textarea { font-family: "Consolas", "Monaco", monospace; font-size: 12px; min-height: 200px; }
-
   .cfg-loading { text-align: center; padding: 60px; font-size: 16px; color: #6c757d; }
 
   .cfg-actions { display: flex; gap: 8px; align-items: center; }
+
+  .adv-toggle { cursor: pointer; color: #6c757d; font-size: 13px; margin-top: 14px; user-select: none; }
+  .adv-toggle:hover { color: #495057; }
+  .adv-toggle::before { content: '+ Show '; }
+  .adv-toggle.open::before { content: '- Hide '; }
+  .adv-section { display: none; border-top: 1px dashed #dee2e6; margin-top: 8px; padding-top: 8px; }
+
 </style>
 </head>
 <body>
@@ -75,13 +80,12 @@
 <div class="cfg-layout">
   <nav class="cfg-sidebar" id="sidebar">
     <a href="#" data-tab="study" class="active">Study</a>
-    <a href="#" data-tab="llm">LLM</a>
+    <a href="#" data-tab="llm">AI Model</a>
     <a href="#" data-tab="interview">Interview</a>
     <a href="#" data-tab="extraction">Node Extraction</a>
     <a href="#" data-tab="rating">Node Rating</a>
     <a href="#" data-tab="canvas">Canvas</a>
     <a href="#" data-tab="final">Final Network</a>
-    <a href="#" data-tab="json">Raw JSON</a>
     <hr style="margin:8px 16px">
     <div class="cfg-actions" style="padding:4px 16px">
       <button class="btn btn-sm btn-outline-secondary" onclick="downloadConfig()">Download</button>
@@ -101,57 +105,64 @@
         <legend>Study</legend>
         <label for="study_label">Study label</label>
         <input type="text" id="study_label" data-path="study.label">
+        <div class="help">Internal name for this study run (e.g. "pilot_june_2026")</div>
 
         <label for="study_consent_intro">Consent intro text</label>
         <textarea id="study_consent_intro" data-path="study.consent_intro"></textarea>
+        <div class="help">Shown to participants on the consent page before they agree to take part</div>
 
         <label for="study_consent_highlight">Consent highlight text</label>
         <textarea id="study_consent_highlight" data-path="study.consent_highlight" rows="3"></textarea>
+        <div class="help">Highlighted below the intro (e.g. time estimate and compensation)</div>
 
         <label for="study_completion_url">Completion URL</label>
         <input type="text" id="study_completion_url" data-path="study.completion_url">
-        <div class="help">Redirect URL after study completion (e.g. Prolific completion link)</div>
+        <div class="help">Where participants are redirected after finishing (e.g. Prolific completion link)</div>
 
         <label for="study_no_consent_url">No-consent URL</label>
         <input type="text" id="study_no_consent_url" data-path="study.no_consent_url">
+        <div class="help">Where participants go if they decline consent</div>
       </fieldset>
     </div>
 
-    <!-- LLM -->
+    <!-- AI Model -->
     <div class="tab-panel" id="tab-llm">
       <fieldset>
-        <legend>LLM Provider</legend>
+        <legend>AI Model</legend>
         <label for="llm_provider">Provider</label>
         <select id="llm_provider" data-path="llm.provider">
           <option value="openai">OpenAI</option>
           <option value="aqueduct">Aqueduct</option>
           <option value="other">Other (OpenAI-compatible)</option>
         </select>
-        <div class="help">Any provider with an OpenAI-compatible API will work.</div>
 
         <label for="llm_model">Model</label>
         <input type="text" id="llm_model" data-path="llm.model">
+        <div class="help">The AI model used for the interview and node extraction (e.g. gpt-4.1-2025-04-14)</div>
 
-        <label for="llm_api_key_env">API key env variable</label>
-        <input type="text" id="llm_api_key_env" data-path="llm.api_key_env">
-        <div class="help">Name of the environment variable holding the API key (e.g. OPENAI_API_KEY)</div>
+        <div class="adv-toggle" onclick="toggleAdvanced(this)">technical settings</div>
+        <div class="adv-section">
+          <div class="help" style="margin-bottom:8px">These are usually configured once during setup. Change them only if you know what they do.</div>
 
-        <label for="llm_base_url_env">Base URL env variable</label>
-        <input type="text" id="llm_base_url_env" data-path="llm.base_url_env">
-        <div class="help">Optional. Name of the env var holding the API base URL. Leave empty for the provider default.</div>
+          <label for="llm_api_key_env">API key environment variable</label>
+          <input type="text" id="llm_api_key_env" data-path="llm.api_key_env">
 
-        <div class="inline-group">
-          <div>
-            <label for="llm_temperature">Temperature</label>
-            <input type="number" id="llm_temperature" data-path="llm.temperature" step="0.1" min="0" max="2">
-          </div>
-          <div>
-            <label for="llm_max_retries">Max retries</label>
-            <input type="number" id="llm_max_retries" data-path="llm.max_retries" min="0" max="20">
-          </div>
-          <div>
-            <label for="llm_retry_delay">Retry delay (s)</label>
-            <input type="number" id="llm_retry_delay" data-path="llm.retry_delay_seconds" min="0" max="60">
+          <label for="llm_base_url_env">Base URL environment variable</label>
+          <input type="text" id="llm_base_url_env" data-path="llm.base_url_env">
+
+          <div class="inline-group">
+            <div>
+              <label for="llm_temperature">Temperature</label>
+              <input type="number" id="llm_temperature" data-path="llm.temperature" step="0.1" min="0" max="2">
+            </div>
+            <div>
+              <label for="llm_max_retries">Max retries</label>
+              <input type="number" id="llm_max_retries" data-path="llm.max_retries" min="0" max="20">
+            </div>
+            <div>
+              <label for="llm_retry_delay">Retry delay (s)</label>
+              <input type="number" id="llm_retry_delay" data-path="llm.retry_delay_seconds" min="0" max="60">
+            </div>
           </div>
         </div>
       </fieldset>
@@ -171,11 +182,12 @@
 
         <div class="inline-group">
           <div>
-            <label for="interview_max_turns">Max turns</label>
+            <label for="interview_max_turns">Maximum conversation length</label>
             <input type="number" id="interview_max_turns" data-path="interview.max_turns" min="1" max="20">
+            <div class="help">How many back-and-forth exchanges before the interview ends</div>
           </div>
           <div>
-            <label for="interview_input_mode">Input mode</label>
+            <label for="interview_input_mode">Participant input</label>
             <select id="interview_input_mode" data-path="interview.input_mode">
               <option value="text">Text only</option>
               <option value="voice">Voice only</option>
@@ -199,14 +211,15 @@
         <label for="extraction_mode">Mode</label>
         <select id="extraction_mode" data-path="node_extraction.mode" onchange="toggleExtractionMode()">
           <option value="closed">Closed (predefined items)</option>
-          <option value="open">Open (LLM extracts freely)</option>
+          <option value="open">Open (AI extracts freely)</option>
         </select>
-        <div class="help">Closed: nodes come from a fixed item list. Open: the LLM extracts beliefs from the transcript.</div>
+        <div class="help">Closed: participants rate a fixed set of statements you define below. Open: the AI extracts beliefs from the interview.</div>
       </fieldset>
 
       <div id="extraction-items-section">
         <fieldset>
           <legend>Items</legend>
+          <div class="help" style="margin-bottom:8px">Each item is a belief statement that participants will rate on a scale.</div>
           <div class="list-controls">
             <button class="btn btn-sm btn-primary" onclick="addItem()">+ Add item</button>
           </div>
@@ -219,7 +232,7 @@
     <div class="tab-panel" id="tab-rating">
       <fieldset>
         <legend>Rating Dimensions</legend>
-        <div class="help" style="margin-bottom:8px">Each dimension becomes a slider/scale shown per node on the rating page.</div>
+        <div class="help" style="margin-bottom:8px">Each dimension becomes a scale shown per statement on the rating page. For example, you might ask participants to rate both their agreement and the personal importance of each statement.</div>
         <div class="list-controls">
           <button class="btn btn-sm btn-primary" onclick="addDimension()">+ Add dimension</button>
         </div>
@@ -230,51 +243,56 @@
     <!-- Canvas -->
     <div class="tab-panel" id="tab-canvas">
       <fieldset>
-        <legend>Node Display</legend>
-        <label for="canvas_color_dim">Color dimension</label>
-        <select id="canvas_color_dim" data-path="canvas.nodes.color_dimension"></select>
-        <div class="help">Which rating dimension drives node color on the canvas.</div>
-
-        <div class="inline-group">
+        <legend>Canvas</legend>
+        <div class="inline-group" style="align-items:start">
           <div>
-            <label for="canvas_low_color">Low color</label>
-            <input type="color" id="canvas_low_color" data-path="canvas.nodes.color_map.low_color">
+            <label for="canvas_min_nodes">Minimum statements on map</label>
+            <input type="number" id="canvas_min_nodes" data-path="canvas.min_nodes" min="1">
+            <div class="help">Participants must place at least this many</div>
           </div>
           <div>
-            <label for="canvas_high_color">High color</label>
-            <input type="color" id="canvas_high_color" data-path="canvas.nodes.color_map.high_color">
-          </div>
-          <div>
-            <label for="canvas_threshold">Threshold</label>
-            <input type="number" id="canvas_threshold" data-path="canvas.nodes.color_map.threshold" step="0.5">
+            <label for="canvas_max_nodes">Maximum statements on map</label>
+            <input type="number" id="canvas_max_nodes" data-path="canvas.max_nodes" min="1">
           </div>
         </div>
 
-        <label for="canvas_size_dim">Size dimension</label>
-        <select id="canvas_size_dim" data-path="canvas.nodes.size_dimension">
-          <option value="">-- None (fixed size) --</option>
-        </select>
+        <div class="adv-toggle" onclick="toggleAdvanced(this)">appearance settings</div>
+        <div class="adv-section">
+          <label for="canvas_color_dim">Color dimension</label>
+          <select id="canvas_color_dim" data-path="canvas.nodes.color_dimension"></select>
+          <div class="help">Which rating dimension drives node color on the canvas</div>
 
-        <div class="inline-group">
-          <div>
-            <label for="canvas_fixed_radius">Fixed radius</label>
-            <input type="number" id="canvas_fixed_radius" data-path="canvas.nodes.fixed_radius" min="4" max="40">
+          <div class="inline-group">
+            <div>
+              <label for="canvas_low_color">Low color</label>
+              <input type="color" id="canvas_low_color" data-path="canvas.nodes.color_map.low_color">
+            </div>
+            <div>
+              <label for="canvas_high_color">High color</label>
+              <input type="color" id="canvas_high_color" data-path="canvas.nodes.color_map.high_color">
+            </div>
+            <div>
+              <label for="canvas_threshold">Threshold</label>
+              <input type="number" id="canvas_threshold" data-path="canvas.nodes.color_map.threshold" step="0.5">
+              <div class="help">Midpoint of the color scale</div>
+            </div>
           </div>
-          <div>
-            <label for="canvas_min_nodes">Min nodes</label>
-            <input type="number" id="canvas_min_nodes" data-path="canvas.min_nodes" min="1">
-          </div>
-          <div>
-            <label for="canvas_max_nodes">Max nodes</label>
-            <input type="number" id="canvas_max_nodes" data-path="canvas.max_nodes" min="1">
-          </div>
+
+          <label for="canvas_size_dim">Size dimension</label>
+          <select id="canvas_size_dim" data-path="canvas.nodes.size_dimension">
+            <option value="">-- None (fixed size) --</option>
+          </select>
+
+          <label for="canvas_fixed_radius">Fixed radius</label>
+          <input type="number" id="canvas_fixed_radius" data-path="canvas.nodes.fixed_radius" min="4" max="40">
         </div>
       </fieldset>
 
       <fieldset>
-        <legend>Edge Types</legend>
+        <legend>Relationship Types</legend>
+        <div class="help" style="margin-bottom:8px">Define the types of connections participants can draw between statements (e.g. "supporting" and "conflicting").</div>
         <div class="list-controls">
-          <button class="btn btn-sm btn-primary" onclick="addEdge()">+ Add edge type</button>
+          <button class="btn btn-sm btn-primary" onclick="addEdge()">+ Add relationship type</button>
         </div>
         <div id="edges-list"></div>
       </fieldset>
@@ -286,12 +304,14 @@
         <legend>Final Network View</legend>
         <div class="checkbox-row">
           <input type="checkbox" id="final_enabled" data-path="final_network.enabled">
-          <label for="final_enabled">Enabled</label>
+          <label for="final_enabled">Show final network to participants</label>
         </div>
+        <div class="help">When enabled, participants see their completed network and answer follow-up questions about it</div>
       </fieldset>
 
       <fieldset>
-        <legend>Post-network Questions</legend>
+        <legend>Follow-up Questions</legend>
+        <div class="help" style="margin-bottom:8px">Questions shown after participants view their completed network.</div>
         <div class="list-controls">
           <button class="btn btn-sm btn-primary" onclick="addQuestion()">+ Add question</button>
         </div>
@@ -299,73 +319,66 @@
       </fieldset>
     </div>
 
-    <!-- Raw JSON -->
-    <div class="tab-panel" id="tab-json">
-      <fieldset>
-        <legend>Raw JSON</legend>
-        <div class="help" style="margin-bottom:8px">Edit the raw config JSON directly. Changes here override all tabs when you save.</div>
-        <textarea id="raw-json" class="json-section" style="min-height:500px"></textarea>
-      </fieldset>
-    </div>
 
   </div>
 </div>
 
 <script>
-let config = null;
-let activeTab = 'study';
+var config = null;
+var activeTab = 'study';
 
-// -- Toast --
+var DIRECTION_LABELS = {
+  'pro_meat': 'Positive', 'anti_meat': 'Negative', 'mixed': 'Mixed',
+  'positive': 'Positive', 'negative': 'Negative'
+};
+var DIRECTION_VALUES = { 'Positive': 'pro_meat', 'Negative': 'anti_meat', 'Mixed': 'mixed' };
+
 function toast(msg, ok) {
-  const el = document.getElementById('toast');
+  var el = document.getElementById('toast');
   el.textContent = msg;
   el.className = 'toast-msg show ' + (ok ? 'ok' : 'err');
-  setTimeout(() => el.className = 'toast-msg', 3000);
+  setTimeout(function(){ el.className = 'toast-msg'; }, 3000);
 }
 
-// -- Tab switching --
+function toggleAdvanced(el) {
+  el.classList.toggle('open');
+  el.nextElementSibling.style.display = el.classList.contains('open') ? 'block' : '';
+}
+
 document.getElementById('sidebar').addEventListener('click', function(e) {
   if (e.target.tagName !== 'A') return;
   e.preventDefault();
-  const tab = e.target.dataset.tab;
+  var tab = e.target.dataset.tab;
   if (!tab) return;
   switchTab(tab);
 });
 
 function switchTab(tab) {
-  // if leaving json tab, try to parse and apply
-  if (activeTab === 'json' && tab !== 'json') {
-    applyRawJson();
-  }
-  // if entering json tab, serialize current state
-  if (tab === 'json') {
-    collectFromForm();
-    document.getElementById('raw-json').value = JSON.stringify(config, null, 2);
-  }
-
   activeTab = tab;
-  document.querySelectorAll('.cfg-sidebar a').forEach(a => a.classList.toggle('active', a.dataset.tab === tab));
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tab));
+  document.querySelectorAll('.cfg-sidebar a').forEach(function(a){ a.classList.toggle('active', a.dataset.tab === tab); });
+  document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.toggle('active', p.id === 'tab-' + tab); });
 }
 
-// -- Data helpers --
 function getPath(obj, path) {
-  return path.split('.').reduce((o, k) => (o && o[k] !== undefined) ? o[k] : null, obj);
+  return path.split('.').reduce(function(o, k){ return (o && o[k] !== undefined) ? o[k] : null; }, obj);
 }
 function setPath(obj, path, val) {
-  const keys = path.split('.');
-  let cur = obj;
-  for (let i = 0; i < keys.length - 1; i++) {
+  var keys = path.split('.');
+  var cur = obj;
+  for (var i = 0; i < keys.length - 1; i++) {
     if (!(keys[i] in cur)) cur[keys[i]] = {};
     cur = cur[keys[i]];
   }
   cur[keys[keys.length - 1]] = val;
 }
 
-// -- Populate simple fields from config --
+function slugify(s) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+}
+
 function populateForm() {
-  document.querySelectorAll('[data-path]').forEach(el => {
-    const val = getPath(config, el.dataset.path);
+  document.querySelectorAll('[data-path]').forEach(function(el) {
+    var val = getPath(config, el.dataset.path);
     if (el.type === 'checkbox') {
       el.checked = !!val;
     } else if (val !== null && val !== undefined) {
@@ -374,7 +387,6 @@ function populateForm() {
       el.value = '';
     }
   });
-
   renderItems();
   renderDimensions();
   renderEdges();
@@ -383,11 +395,10 @@ function populateForm() {
   toggleExtractionMode();
 }
 
-// -- Collect simple fields back into config --
 function collectFromForm() {
-  document.querySelectorAll('[data-path]').forEach(el => {
-    const path = el.dataset.path;
-    let val;
+  document.querySelectorAll('[data-path]').forEach(function(el) {
+    var path = el.dataset.path;
+    var val;
     if (el.type === 'checkbox') {
       val = el.checked;
     } else if (el.type === 'number') {
@@ -395,51 +406,62 @@ function collectFromForm() {
     } else {
       val = el.value;
     }
-    // treat empty string for nullable fields as null
     if (val === '' && (path.endsWith('_env') || path === 'canvas.nodes.size_dimension')) {
       val = null;
     }
     setPath(config, path, val);
   });
-
   collectItems();
   collectDimensions();
   collectEdges();
   collectQuestions();
 }
 
-// -- Items (node extraction) --
+// -- Items --
 function renderItems() {
-  const container = document.getElementById('items-list');
-  const items = (config.node_extraction && config.node_extraction.items) || [];
-  container.innerHTML = items.map((item, i) => `
-    <div class="list-item" data-idx="${i}">
-      <button class="btn btn-sm btn-danger remove-btn" onclick="removeItem(${i})">Remove</button>
-      <div class="inline-group">
-        <div><label>ID</label><input type="text" data-item="${i}" data-field="id" value="${esc(item.id || '')}"></div>
-        <div><label>Short label</label><input type="text" data-item="${i}" data-field="short_label" value="${esc(item.short_label || '')}"></div>
-        <div><label>Direction</label>
-          <select data-item="${i}" data-field="direction">
-            <option value="pro_meat" ${item.direction==='pro_meat'?'selected':''}>pro_meat</option>
-            <option value="anti_meat" ${item.direction==='anti_meat'?'selected':''}>anti_meat</option>
-            <option value="mixed" ${item.direction==='mixed'?'selected':''}>mixed</option>
-          </select>
-        </div>
-      </div>
-      <label>Label</label><input type="text" data-item="${i}" data-field="label" value="${esc(item.label || '')}">
-      <label>Template</label><input type="text" data-item="${i}" data-field="template" value="${esc(item.template || '')}">
-      <label>Codebook</label><textarea data-item="${i}" data-field="codebook" rows="3">${esc(item.codebook || '')}</textarea>
-    </div>
-  `).join('');
+  var container = document.getElementById('items-list');
+  var items = (config.node_extraction && config.node_extraction.items) || [];
+  container.innerHTML = items.map(function(item, i) {
+    var dirLabel = DIRECTION_LABELS[item.direction] || 'Mixed';
+    return '<div class="list-item" data-idx="' + i + '">' +
+      '<button class="btn btn-sm btn-danger remove-btn" onclick="removeItem(' + i + ')">Remove</button>' +
+      '<div class="inline-group">' +
+        '<div><label>Short label</label><input type="text" data-item="' + i + '" data-field="short_label" value="' + esc(item.short_label || '') + '"></div>' +
+        '<div><label>Direction</label>' +
+          '<select data-item="' + i + '" data-field="direction">' +
+            '<option value="Positive"' + (dirLabel === 'Positive' ? ' selected' : '') + '>Positive</option>' +
+            '<option value="Negative"' + (dirLabel === 'Negative' ? ' selected' : '') + '>Negative</option>' +
+            '<option value="Mixed"' + (dirLabel === 'Mixed' ? ' selected' : '') + '>Mixed</option>' +
+          '</select>' +
+          '<div class="help">Positive = in favor of topic, Negative = against</div>' +
+        '</div>' +
+      '</div>' +
+      '<label>Label</label><input type="text" data-item="' + i + '" data-field="label" value="' + esc(item.label || '') + '">' +
+      '<div class="help">How this statement appears to participants</div>' +
+      '<label>Statement</label><input type="text" data-item="' + i + '" data-field="template" value="' + esc(item.template || '') + '">' +
+      '<div class="help">The full statement participants rate. Use [SCALE] where the agreement level goes, e.g. "I [SCALE] that meat tastes great"</div>' +
+      '<label>Coding instructions (for AI extraction)</label>' +
+      '<textarea data-item="' + i + '" data-field="codebook" rows="3">' + esc(item.codebook || '') + '</textarea>' +
+      '<div class="help">Instructions the AI uses to detect this belief in the interview transcript</div>' +
+    '</div>';
+  }).join('');
 }
 
 function collectItems() {
   if (!config.node_extraction) return;
-  const items = config.node_extraction.items || [];
-  document.querySelectorAll('[data-item]').forEach(el => {
-    const idx = Number(el.dataset.item);
-    const field = el.dataset.field;
-    if (items[idx]) items[idx][field] = el.value;
+  var items = config.node_extraction.items || [];
+  document.querySelectorAll('[data-item]').forEach(function(el) {
+    var idx = Number(el.dataset.item);
+    var field = el.dataset.field;
+    if (!items[idx]) return;
+    if (field === 'direction') {
+      items[idx][field] = DIRECTION_VALUES[el.value] || el.value;
+    } else {
+      items[idx][field] = el.value;
+    }
+  });
+  items.forEach(function(item) {
+    if (!item.id && item.short_label) item.id = slugify(item.short_label);
   });
 }
 
@@ -448,9 +470,10 @@ function addItem() {
   if (!config.node_extraction.items) config.node_extraction.items = [];
   collectItems();
   config.node_extraction.items.push({
-    id: '', template: '', labels: {"1":"strongly disagree","2":"disagree","3":"somewhat disagree","4":"somewhat agree","5":"agree","6":"strongly agree"},
+    id: '', template: '',
+    labels: {"1":"strongly disagree","2":"disagree","3":"somewhat disagree","4":"somewhat agree","5":"agree","6":"strongly agree"},
     anchor_lo: 'Strongly disagree', anchor_hi: 'Strongly agree',
-    label: '', short_label: '', direction: 'pro_meat', codebook: ''
+    label: '', short_label: '', direction: 'mixed', codebook: ''
   });
   renderItems();
 }
@@ -462,54 +485,48 @@ function removeItem(idx) {
 }
 
 function toggleExtractionMode() {
-  const mode = document.getElementById('extraction_mode').value;
+  var mode = document.getElementById('extraction_mode').value;
   document.getElementById('extraction-items-section').style.display = mode === 'closed' ? '' : 'none';
 }
 
-// -- Dimensions (node rating) --
+// -- Dimensions --
 function renderDimensions() {
-  const container = document.getElementById('dimensions-list');
-  const dims = (config.node_rating && config.node_rating.dimensions) || [];
-  container.innerHTML = dims.map((d, i) => `
-    <div class="list-item" data-idx="${i}">
-      <button class="btn btn-sm btn-danger remove-btn" onclick="removeDimension(${i})">Remove</button>
-      <div class="inline-group">
-        <div><label>ID</label><input type="text" data-dim="${i}" data-field="id" value="${esc(d.id || '')}"></div>
-        <div><label>Label</label><input type="text" data-dim="${i}" data-field="label" value="${esc(d.label || '')}"></div>
-        <div><label>Maps to</label>
-          <select data-dim="${i}" data-field="maps_to">
-            <option value="" ${!d.maps_to?'selected':''}>-- None --</option>
-            <option value="color" ${d.maps_to==='color'?'selected':''}>Color</option>
-            <option value="size" ${d.maps_to==='size'?'selected':''}>Size</option>
-          </select>
-        </div>
-      </div>
-      <div class="inline-group">
-        <div><label>Scale min</label><input type="number" data-dim="${i}" data-field="scale_min" value="${d.scale_min ?? 1}"></div>
-        <div><label>Scale max</label><input type="number" data-dim="${i}" data-field="scale_max" value="${d.scale_max ?? 7}"></div>
-      </div>
-      <div class="inline-group">
-        <div><label>Anchor low</label><input type="text" data-dim="${i}" data-field="anchor_lo" value="${esc(d.anchor_lo || '')}"></div>
-        <div><label>Anchor high</label><input type="text" data-dim="${i}" data-field="anchor_hi" value="${esc(d.anchor_hi || '')}"></div>
-      </div>
-    </div>
-  `).join('');
+  var container = document.getElementById('dimensions-list');
+  var dims = (config.node_rating && config.node_rating.dimensions) || [];
+  container.innerHTML = dims.map(function(d, i) {
+    return '<div class="list-item" data-idx="' + i + '">' +
+      '<button class="btn btn-sm btn-danger remove-btn" onclick="removeDimension(' + i + ')">Remove</button>' +
+      '<label>Label</label><input type="text" data-dim="' + i + '" data-field="label" value="' + esc(d.label || '') + '">' +
+      '<div class="help">Name shown to participants (e.g. "Agreement", "Personal importance")</div>' +
+      '<div class="inline-group">' +
+        '<div><label>Scale min</label><input type="number" data-dim="' + i + '" data-field="scale_min" value="' + (d.scale_min != null ? d.scale_min : 1) + '"></div>' +
+        '<div><label>Scale max</label><input type="number" data-dim="' + i + '" data-field="scale_max" value="' + (d.scale_max != null ? d.scale_max : 7) + '"></div>' +
+      '</div>' +
+      '<div class="inline-group">' +
+        '<div><label>Low anchor</label><input type="text" data-dim="' + i + '" data-field="anchor_lo" value="' + esc(d.anchor_lo || '') + '">' +
+          '<div class="help">Label at the low end of the scale</div></div>' +
+        '<div><label>High anchor</label><input type="text" data-dim="' + i + '" data-field="anchor_hi" value="' + esc(d.anchor_hi || '') + '">' +
+          '<div class="help">Label at the high end of the scale</div></div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
 }
 
 function collectDimensions() {
   if (!config.node_rating) return;
-  const dims = config.node_rating.dimensions || [];
-  document.querySelectorAll('[data-dim]').forEach(el => {
-    const idx = Number(el.dataset.dim);
-    const field = el.dataset.field;
+  var dims = config.node_rating.dimensions || [];
+  document.querySelectorAll('[data-dim]').forEach(function(el) {
+    var idx = Number(el.dataset.dim);
+    var field = el.dataset.field;
     if (!dims[idx]) return;
     if (field === 'scale_min' || field === 'scale_max') {
       dims[idx][field] = Number(el.value);
-    } else if (field === 'maps_to') {
-      dims[idx][field] = el.value || null;
     } else {
       dims[idx][field] = el.value;
     }
+  });
+  dims.forEach(function(dim) {
+    if (!dim.id && dim.label) dim.id = slugify(dim.label);
   });
 }
 
@@ -532,61 +549,75 @@ function removeDimension(idx) {
 }
 
 function populateDimensionDropdowns() {
-  const dims = (config.node_rating && config.node_rating.dimensions) || [];
-  ['canvas_color_dim', 'canvas_size_dim'].forEach(selId => {
-    const sel = document.getElementById(selId);
-    const cur = sel.value || getPath(config, sel.dataset.path) || '';
-    const hasNone = selId === 'canvas_size_dim';
+  var dims = (config.node_rating && config.node_rating.dimensions) || [];
+  ['canvas_color_dim', 'canvas_size_dim'].forEach(function(selId) {
+    var sel = document.getElementById(selId);
+    var cur = sel.value || getPath(config, sel.dataset.path) || '';
+    var hasNone = selId === 'canvas_size_dim';
     sel.innerHTML = (hasNone ? '<option value="">-- None (fixed size) --</option>' : '') +
-      dims.map(d => `<option value="${esc(d.id)}" ${d.id === cur ? 'selected' : ''}>${esc(d.label || d.id)}</option>`).join('');
+      dims.map(function(d){ return '<option value="' + esc(d.id) + '"' + (d.id === cur ? ' selected' : '') + '>' + esc(d.label || d.id) + '</option>'; }).join('');
     if (cur) sel.value = cur;
   });
 }
 
 // -- Edges --
 function renderEdges() {
-  const container = document.getElementById('edges-list');
-  const edges = (config.canvas && config.canvas.edges) || [];
-  container.innerHTML = edges.map((e, i) => `
-    <div class="list-item" data-idx="${i}">
-      <button class="btn btn-sm btn-danger remove-btn" onclick="removeEdge(${i})">Remove</button>
-      <div class="inline-group">
-        <div><label>ID</label><input type="text" data-edge="${i}" data-field="id" value="${esc(e.id || '')}"></div>
-        <div><label>Label</label><input type="text" data-edge="${i}" data-field="label" value="${esc(e.label || '')}"></div>
-        <div><label>Color</label><input type="color" data-edge="${i}" data-field="color" value="${e.color || '#666666'}"></div>
-      </div>
-      <div class="inline-group">
-        <div><label>Verb</label><input type="text" data-edge="${i}" data-field="verb" value="${esc(e.verb || '')}">
-          <div class="help">e.g. "support", "conflict with"</div></div>
-        <div><label>Strength label</label><input type="text" data-edge="${i}" data-field="strength_label" value="${esc(e.strength_label || '')}"></div>
-      </div>
-      <label>Description</label><input type="text" data-edge="${i}" data-field="description" value="${esc(e.description || '')}">
-      <div class="inline-group">
-        <div class="checkbox-row">
-          <input type="checkbox" data-edge="${i}" data-field="directed" ${e.directed?'checked':''}>
-          <label>Directed</label>
-        </div>
-        <div class="checkbox-row">
-          <input type="checkbox" data-edge="${i}" data-field="show_prior_edges" ${e.show_prior_edges?'checked':''}>
-          <label>Show prior edges</label>
-        </div>
-      </div>
-    </div>
-  `).join('');
+  var container = document.getElementById('edges-list');
+  var edges = (config.canvas && config.canvas.edges) || [];
+  container.innerHTML = edges.map(function(e, i) {
+    return '<div class="list-item" data-idx="' + i + '">' +
+      '<button class="btn btn-sm btn-danger remove-btn" onclick="removeEdge(' + i + ')">Remove</button>' +
+      '<div class="inline-group" style="align-items:start">' +
+        '<div><label>Label</label><input type="text" data-edge="' + i + '" data-field="label" value="' + esc(e.label || '') + '">' +
+          '<div class="help">Name shown to participants (e.g. "Supporting")</div></div>' +
+        '<div style="flex:0 0 80px"><label>Color</label><input type="color" data-edge="' + i + '" data-field="color" value="' + (e.color || '#666666') + '"></div>' +
+      '</div>' +
+      '<div class="inline-group">' +
+        '<div><label>Verb</label><input type="text" data-edge="' + i + '" data-field="verb" value="' + esc(e.verb || '') + '">' +
+          '<div class="help">Used in prompts, e.g. "support", "conflict with"</div></div>' +
+        '<div><label>Strength label</label><input type="text" data-edge="' + i + '" data-field="strength_label" value="' + esc(e.strength_label || '') + '">' +
+          '<div class="help">Question for the strength slider</div></div>' +
+      '</div>' +
+      '<label>Description</label><input type="text" data-edge="' + i + '" data-field="description" value="' + esc(e.description || '') + '">' +
+      '<div class="help">Explains this relationship type to participants</div>' +
+      '<div class="adv-toggle" onclick="toggleAdvanced(this)">advanced options</div>' +
+      '<div class="adv-section">' +
+        '<div class="inline-group">' +
+          '<div>' +
+            '<div class="checkbox-row">' +
+              '<input type="checkbox" data-edge="' + i + '" data-field="directed"' + (e.directed ? ' checked' : '') + '>' +
+              '<label>Directed</label>' +
+            '</div>' +
+            '<div class="help">Edges have a from/to direction</div>' +
+          '</div>' +
+          '<div>' +
+            '<div class="checkbox-row">' +
+              '<input type="checkbox" data-edge="' + i + '" data-field="show_prior_edges"' + (e.show_prior_edges ? ' checked' : '') + '>' +
+              '<label>Show prior edges</label>' +
+            '</div>' +
+            '<div class="help">Previously drawn edges visible when drawing this type</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
 }
 
 function collectEdges() {
   if (!config.canvas) return;
-  const edges = config.canvas.edges || [];
-  document.querySelectorAll('[data-edge]').forEach(el => {
-    const idx = Number(el.dataset.edge);
-    const field = el.dataset.field;
+  var edges = config.canvas.edges || [];
+  document.querySelectorAll('[data-edge]').forEach(function(el) {
+    var idx = Number(el.dataset.edge);
+    var field = el.dataset.field;
     if (!edges[idx]) return;
     if (el.type === 'checkbox') {
       edges[idx][field] = el.checked;
     } else {
       edges[idx][field] = el.value;
     }
+  });
+  edges.forEach(function(edge) {
+    if (!edge.id && edge.label) edge.id = slugify(edge.label);
   });
 }
 
@@ -609,47 +640,46 @@ function removeEdge(idx) {
 
 // -- Final network questions --
 function renderQuestions() {
-  const container = document.getElementById('questions-list');
-  const qs = (config.final_network && config.final_network.questions) || [];
-  container.innerHTML = qs.map((q, i) => `
-    <div class="list-item" data-idx="${i}">
-      <button class="btn btn-sm btn-danger remove-btn" onclick="removeQuestion(${i})">Remove</button>
-      <div class="inline-group">
-        <div><label>ID</label><input type="text" data-q="${i}" data-field="id" value="${esc(q.id || '')}"></div>
-        <div><label>Type</label>
-          <select data-q="${i}" data-field="type">
-            <option value="scale" ${q.type==='scale'?'selected':''}>Scale</option>
-            <option value="text" ${q.type==='text'?'selected':''}>Text</option>
-          </select>
-        </div>
-      </div>
-      <label>Label</label><input type="text" data-q="${i}" data-field="label" value="${esc(q.label || '')}">
-      ${q.type === 'scale' ? `
-        <div class="inline-group">
-          <div><label>Scale min</label><input type="number" data-q="${i}" data-field="scale_min" value="${q.scale_min ?? 1}"></div>
-          <div><label>Scale max</label><input type="number" data-q="${i}" data-field="scale_max" value="${q.scale_max ?? 7}"></div>
-        </div>
-        <div class="inline-group">
-          <div><label>Anchor low</label><input type="text" data-q="${i}" data-field="anchor_lo" value="${esc(q.anchor_lo || '')}"></div>
-          <div><label>Anchor high</label><input type="text" data-q="${i}" data-field="anchor_hi" value="${esc(q.anchor_hi || '')}"></div>
-        </div>
-      ` : ''}
-    </div>
-  `).join('');
+  var container = document.getElementById('questions-list');
+  var qs = (config.final_network && config.final_network.questions) || [];
+  container.innerHTML = qs.map(function(q, i) {
+    var scaleHtml = q.type === 'scale' ?
+      '<div class="inline-group">' +
+        '<div><label>Scale min</label><input type="number" data-q="' + i + '" data-field="scale_min" value="' + (q.scale_min != null ? q.scale_min : 1) + '"></div>' +
+        '<div><label>Scale max</label><input type="number" data-q="' + i + '" data-field="scale_max" value="' + (q.scale_max != null ? q.scale_max : 7) + '"></div>' +
+      '</div>' +
+      '<div class="inline-group">' +
+        '<div><label>Low anchor</label><input type="text" data-q="' + i + '" data-field="anchor_lo" value="' + esc(q.anchor_lo || '') + '"></div>' +
+        '<div><label>High anchor</label><input type="text" data-q="' + i + '" data-field="anchor_hi" value="' + esc(q.anchor_hi || '') + '"></div>' +
+      '</div>' : '';
+    return '<div class="list-item" data-idx="' + i + '">' +
+      '<button class="btn btn-sm btn-danger remove-btn" onclick="removeQuestion(' + i + ')">Remove</button>' +
+      '<label>Type</label>' +
+      '<select data-q="' + i + '" data-field="type">' +
+        '<option value="scale"' + (q.type === 'scale' ? ' selected' : '') + '>Scale</option>' +
+        '<option value="text"' + (q.type === 'text' ? ' selected' : '') + '>Open text</option>' +
+      '</select>' +
+      '<label>Question</label><input type="text" data-q="' + i + '" data-field="label" value="' + esc(q.label || '') + '">' +
+      scaleHtml +
+    '</div>';
+  }).join('');
 }
 
 function collectQuestions() {
   if (!config.final_network) return;
-  const qs = config.final_network.questions || [];
-  document.querySelectorAll('[data-q]').forEach(el => {
-    const idx = Number(el.dataset.q);
-    const field = el.dataset.field;
+  var qs = config.final_network.questions || [];
+  document.querySelectorAll('[data-q]').forEach(function(el) {
+    var idx = Number(el.dataset.q);
+    var field = el.dataset.field;
     if (!qs[idx]) return;
     if (field === 'scale_min' || field === 'scale_max') {
       qs[idx][field] = Number(el.value);
     } else {
       qs[idx][field] = el.value;
     }
+  });
+  qs.forEach(function(q) {
+    if (!q.id && q.label) q.id = slugify(q.label);
   });
 }
 
@@ -669,35 +699,18 @@ function removeQuestion(idx) {
   renderQuestions();
 }
 
-// -- Raw JSON tab --
-function applyRawJson() {
-  const txt = document.getElementById('raw-json').value;
-  if (!txt) return;
-  try {
-    const parsed = JSON.parse(txt);
-    config = parsed;
-    populateForm();
-  } catch (e) {
-    toast('Invalid JSON: ' + e.message, false);
-  }
-}
-
-// -- Escape HTML --
 function esc(s) {
-  const d = document.createElement('div');
+  var d = document.createElement('div');
   d.textContent = s;
   return d.innerHTML;
 }
 
-// -- API calls --
+// -- API --
 async function loadConfig() {
   try {
-    const resp = await fetch('/api/study-config');
+    var resp = await fetch('/api/study-config');
     if (!resp.ok) {
-      if (resp.status === 401) {
-        window.location.href = '/Login';
-        return;
-      }
+      if (resp.status === 401) { window.location.href = '/Login'; return; }
       throw new Error('HTTP ' + resp.status);
     }
     config = await resp.json();
@@ -709,20 +722,15 @@ async function loadConfig() {
 }
 
 async function saveConfig() {
-  // if on the json tab, apply raw json first
-  if (activeTab === 'json') {
-    applyRawJson();
-  } else {
-    collectFromForm();
-  }
+  collectFromForm();
 
   try {
-    const resp = await fetch('/api/study-config', {
+    var resp = await fetch('/api/study-config', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(config, null, 2),
     });
-    const data = await resp.json();
+    var data = await resp.json();
     if (data.ok) {
       toast('Config saved', true);
     } else {
@@ -734,11 +742,9 @@ async function saveConfig() {
 }
 
 function downloadConfig() {
-  if (activeTab === 'json') applyRawJson();
-  else collectFromForm();
-
-  const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
+  collectFromForm();
+  var blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+  var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'study_config.json';
   a.click();
@@ -746,9 +752,9 @@ function downloadConfig() {
 }
 
 function uploadConfig(e) {
-  const file = e.target.files[0];
+  var file = e.target.files[0];
   if (!file) return;
-  const reader = new FileReader();
+  var reader = new FileReader();
   reader.onload = function() {
     try {
       config = JSON.parse(reader.result);
@@ -762,7 +768,6 @@ function uploadConfig(e) {
   e.target.value = '';
 }
 
-// -- Init --
 loadConfig();
 </script>
 </body>
