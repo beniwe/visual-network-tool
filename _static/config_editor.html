@@ -3,57 +3,41 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Study Config Editor</title>
+<title>Study Config</title>
+<link rel="stylesheet" href="/static/bootstrap5/css/bootstrap.min.css">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; color: #333; font-size: 14px; }
+  .toast-msg { position: fixed; top: 70px; right: 16px; padding: 10px 18px; border-radius: 4px; color: #fff; font-weight: 500; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .toast-msg.show { opacity: 1; }
+  .toast-msg.ok { background: #27ae60; }
+  .toast-msg.err { background: #c0392b; }
 
-  .header { background: #2c3e50; color: #fff; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; }
-  .header h1 { font-size: 18px; font-weight: 600; }
-  .header-actions { display: flex; gap: 8px; }
+  .cfg-layout { display: flex; min-height: calc(100vh - 56px); }
+  .cfg-sidebar { width: 200px; background: #fff; border-right: 1px solid #dee2e6; padding: 12px 0; flex-shrink: 0; }
+  .cfg-sidebar a { display: block; padding: 8px 20px; text-decoration: none; color: #555; border-left: 3px solid transparent; font-size: 14px; }
+  .cfg-sidebar a:hover { background: #f0f0f0; }
+  .cfg-sidebar a.active { color: #212529; font-weight: 600; border-left-color: #0d6efd; background: #e8f0fe; }
 
-  .toast { position: fixed; top: 16px; right: 16px; padding: 10px 18px; border-radius: 4px; color: #fff; font-weight: 500; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
-  .toast.show { opacity: 1; }
-  .toast.ok { background: #27ae60; }
-  .toast.err { background: #c0392b; }
-
-  .layout { display: flex; min-height: calc(100vh - 48px); }
-  .sidebar { width: 200px; background: #fff; border-right: 1px solid #ddd; padding: 12px 0; flex-shrink: 0; }
-  .sidebar a { display: block; padding: 8px 20px; text-decoration: none; color: #555; border-left: 3px solid transparent; }
-  .sidebar a:hover { background: #f0f0f0; }
-  .sidebar a.active { color: #2c3e50; font-weight: 600; border-left-color: #3498db; background: #eaf2fa; }
-
-  .main { flex: 1; padding: 24px; max-width: 900px; }
+  .cfg-main { flex: 1; padding: 24px; max-width: 900px; }
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
 
-  fieldset { border: 1px solid #ddd; border-radius: 6px; padding: 16px 20px; margin-bottom: 20px; background: #fff; }
-  legend { font-weight: 600; font-size: 15px; padding: 0 6px; color: #2c3e50; }
+  .cfg-main fieldset { border: 1px solid #dee2e6; border-radius: 6px; padding: 16px 20px; margin-bottom: 20px; background: #fff; }
+  .cfg-main legend { font-weight: 600; font-size: 15px; padding: 0 6px; color: #212529; }
 
-  label { display: block; font-weight: 500; margin-bottom: 4px; margin-top: 12px; }
-  label:first-child { margin-top: 0; }
-  input[type="text"], input[type="number"], input[type="color"], select, textarea {
-    width: 100%; padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; font-family: inherit;
+  .cfg-main label { display: block; font-weight: 500; margin-bottom: 4px; margin-top: 12px; font-size: 14px; }
+  .cfg-main label:first-child { margin-top: 0; }
+  .cfg-main input[type="text"], .cfg-main input[type="number"], .cfg-main select, .cfg-main textarea {
+    width: 100%; padding: 6px 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 13px; font-family: inherit;
   }
-  input[type="color"] { width: 60px; height: 32px; padding: 2px; cursor: pointer; }
-  textarea { min-height: 80px; resize: vertical; }
-  select { background: #fff; }
+  .cfg-main input[type="color"] { width: 60px; height: 32px; padding: 2px; cursor: pointer; border: 1px solid #ced4da; border-radius: 4px; }
+  .cfg-main textarea { min-height: 80px; resize: vertical; }
+  .cfg-main select { background: #fff; }
   .inline-group { display: flex; gap: 12px; align-items: end; }
   .inline-group > div { flex: 1; }
 
-  .help { font-size: 12px; color: #888; margin-top: 2px; }
-
-  .btn { padding: 6px 14px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500; }
-  .btn-primary { background: #3498db; color: #fff; }
-  .btn-primary:hover { background: #2980b9; }
-  .btn-danger { background: #e74c3c; color: #fff; }
-  .btn-danger:hover { background: #c0392b; }
-  .btn-secondary { background: #ecf0f1; color: #333; border: 1px solid #ccc; }
-  .btn-secondary:hover { background: #dfe6e9; }
-  .btn-sm { padding: 4px 10px; font-size: 12px; }
+  .help { font-size: 12px; color: #6c757d; margin-top: 2px; }
 
   .list-controls { margin-bottom: 8px; }
-
   .list-item { border: 1px solid #e0e0e0; border-radius: 4px; padding: 12px; margin-bottom: 8px; background: #fafafa; position: relative; }
   .list-item .remove-btn { position: absolute; top: 8px; right: 8px; }
 
@@ -61,27 +45,35 @@
   .checkbox-row input[type="checkbox"] { width: auto; }
   .checkbox-row label { margin: 0; }
 
-  .json-section { margin-top: 16px; }
   .json-section textarea { font-family: "Consolas", "Monaco", monospace; font-size: 12px; min-height: 200px; }
 
-  .loading { text-align: center; padding: 60px; font-size: 16px; color: #888; }
+  .cfg-loading { text-align: center; padding: 60px; font-size: 16px; color: #6c757d; }
+
+  .cfg-actions { display: flex; gap: 8px; align-items: center; }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <h1>Study Config Editor</h1>
-  <div class="header-actions">
-    <button class="btn btn-secondary" onclick="downloadConfig()">Download JSON</button>
-    <label class="btn btn-secondary" style="margin:0">Upload JSON<input type="file" accept=".json" onchange="uploadConfig(event)" style="display:none"></label>
-    <button class="btn btn-primary" onclick="saveConfig()">Save</button>
+<nav class="navbar navbar-expand-sm navbar-dark bg-dark" id="top_menu">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">oTree</a>
+    <div class="navbar-collapse collapse">
+      <ul class="navbar-nav">
+        <li class="nav-item"><a class="nav-link" href="/demo">Demo</a></li>
+        <li class="nav-item"><a class="nav-link" href="/sessions">Sessions</a></li>
+        <li class="nav-item"><a class="nav-link" href="/rooms">Rooms</a></li>
+        <li class="nav-item"><a class="nav-link" href="/export">Data</a></li>
+        <li class="nav-item"><a class="nav-link" href="/server_check">Server Check</a></li>
+        <li class="nav-item"><a class="nav-link active" href="/config">Study Config</a></li>
+      </ul>
+    </div>
   </div>
-</div>
+</nav>
 
-<div id="toast" class="toast"></div>
+<div id="toast" class="toast-msg"></div>
 
-<div class="layout">
-  <nav class="sidebar" id="sidebar">
+<div class="cfg-layout">
+  <nav class="cfg-sidebar" id="sidebar">
     <a href="#" data-tab="study" class="active">Study</a>
     <a href="#" data-tab="llm">LLM</a>
     <a href="#" data-tab="interview">Interview</a>
@@ -90,10 +82,18 @@
     <a href="#" data-tab="canvas">Canvas</a>
     <a href="#" data-tab="final">Final Network</a>
     <a href="#" data-tab="json">Raw JSON</a>
+    <hr style="margin:8px 16px">
+    <div class="cfg-actions" style="padding:4px 16px">
+      <button class="btn btn-sm btn-outline-secondary" onclick="downloadConfig()">Download</button>
+      <label class="btn btn-sm btn-outline-secondary" style="margin:0;cursor:pointer">Upload<input type="file" accept=".json" onchange="uploadConfig(event)" style="display:none"></label>
+    </div>
+    <div style="padding:8px 16px">
+      <button class="btn btn-sm btn-primary w-100" onclick="saveConfig()">Save Config</button>
+    </div>
   </nav>
 
-  <div class="main" id="main">
-    <div class="loading" id="loading">Loading config...</div>
+  <div class="cfg-main" id="main">
+    <div class="cfg-loading" id="loading">Loading config...</div>
 
     <!-- Study -->
     <div class="tab-panel active" id="tab-study">
@@ -319,8 +319,8 @@ let activeTab = 'study';
 function toast(msg, ok) {
   const el = document.getElementById('toast');
   el.textContent = msg;
-  el.className = 'toast show ' + (ok ? 'ok' : 'err');
-  setTimeout(() => el.className = 'toast', 3000);
+  el.className = 'toast-msg show ' + (ok ? 'ok' : 'err');
+  setTimeout(() => el.className = 'toast-msg', 3000);
 }
 
 // -- Tab switching --
@@ -344,7 +344,7 @@ function switchTab(tab) {
   }
 
   activeTab = tab;
-  document.querySelectorAll('.sidebar a').forEach(a => a.classList.toggle('active', a.dataset.tab === tab));
+  document.querySelectorAll('.cfg-sidebar a').forEach(a => a.classList.toggle('active', a.dataset.tab === tab));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tab));
 }
 

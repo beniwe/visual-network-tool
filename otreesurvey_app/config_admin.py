@@ -1,14 +1,19 @@
 import json
+import os
 
 from starlette.concurrency import run_in_threadpool
 from starlette.endpoints import HTTPEndpoint
 from starlette.requests import Request
-from starlette.responses import JSONResponse, Response
+from starlette.responses import HTMLResponse, JSONResponse, Response
 
 from otree import settings
 from otree.common import AUTH_COOKIE_NAME, AUTH_COOKIE_VALUE
 
 from .config_loader import get_config, save_config, validate_config
+
+_EDITOR_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), '..', '_static', 'config_editor.html'
+)
 
 
 def _is_logged_in(request):
@@ -17,6 +22,26 @@ def _is_logged_in(request):
 
 def _needs_auth():
     return settings.AUTH_LEVEL in ('STUDY', 'DEMO')
+
+
+def _read_editor_html():
+    with open(_EDITOR_PATH, encoding='utf-8') as f:
+        return f.read()
+
+
+class ConfigPageEndpoint(HTTPEndpoint):
+
+    async def dispatch(self):
+        request = Request(self.scope, receive=self.receive)
+        if _needs_auth() and not _is_logged_in(request):
+            from starlette.responses import RedirectResponse
+            response = RedirectResponse('/Login')
+            await response(self.scope, self.receive, self.send)
+            return
+
+        html = await run_in_threadpool(_read_editor_html)
+        response = HTMLResponse(html)
+        await response(self.scope, self.receive, self.send)
 
 
 class ConfigAPIEndpoint(HTTPEndpoint):
@@ -58,3 +83,79 @@ class ConfigAPIEndpoint(HTTPEndpoint):
             return JSONResponse({'errors': [str(e)]}, status_code=500)
 
         return JSONResponse({'ok': True})
+
+
+_NAV_INJECT_SCRIPT = b"""<script>
+(function(){
+  var ul = document.querySelector('#top_menu .navbar-nav');
+  if (!ul) return;
+  var exists = Array.from(ul.querySelectorAll('a')).some(function(a){ return a.href.indexOf('/config') !== -1; });
+  if (!exists) {
+    var li = document.createElement('li');
+    li.className = 'nav-item';
+    var a = document.createElement('a');
+    a.className = 'nav-link';
+    a.href = '/config';
+    a.textContent = 'Study Config';
+    li.appendChild(a);
+    ul.appendChild(li);
+  }
+  var path = window.location.pathname.replace(/\\/$/, '') || '/';
+  ul.querySelectorAll('a.nav-link').forEach(function(a){
+    var href = a.getAttribute('href').replace(/\\/$/, '') || '/';
+    if (href === path) a.classList.add('active');
+  });
+})();
+</script>"""
+
+
+class NavInjectMiddleware:
+
+    def __init__(self, app):
+        self.app = app
+
+    def __getattr__(self, name):
+        return getattr(self.app, name)
+
+    async def __call__(self, scope, receive, send):
+        if scope['type'] != 'http':
+            await self.app(scope, receive, send)
+            return
+
+        path = scope.get('path', '')
+        # only inject into admin pages, skip API / static / config editor
+        if path.startswith('/static/') or path.startswith('/api/') or path.startswith('/config'):
+            await self.app(scope, receive, send)
+            return
+
+        chunks = []
+        initial_message = None
+
+        async def capture_send(message):
+            nonlocal initial_message
+            if message['type'] == 'http.response.start':
+                initial_message = message
+            elif message['type'] == 'http.response.body':
+                chunks.append(message.get('body', b''))
+                if not message.get('more_body', False):
+                    content_type = ''
+                    headers = initial_message.get('headers', [])
+                    for name, val in headers:
+                        if name == b'content-type':
+                            content_type = val.decode('latin-1', errors='replace')
+                            break
+
+                    body = b''.join(chunks)
+                    if 'text/html' in content_type and b'id="top_menu"' in body:
+                        body = body.replace(b'</body>', _NAV_INJECT_SCRIPT + b'</body>')
+                        new_headers = []
+                        for name, val in headers:
+                            if name == b'content-length':
+                                val = str(len(body)).encode()
+                            new_headers.append((name, val))
+                        initial_message['headers'] = new_headers
+
+                    await send(initial_message)
+                    await send({'type': 'http.response.body', 'body': body})
+
+        await self.app(scope, receive, capture_send)
