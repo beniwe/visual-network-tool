@@ -208,9 +208,11 @@
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = o.borderColor;
-    ctx.lineWidth = o.borderWidth;
-    ctx.strokeRect(0, 0, canvas.width, canvas.height);
+    if (o.borderWidth > 0) {
+      ctx.strokeStyle = o.borderColor;
+      ctx.lineWidth = o.borderWidth;
+      ctx.strokeRect(0, 0, canvas.width, canvas.height);
+    }
   }
 
   function drawEdges(ctx, edges = [], opts = {}) {
@@ -292,6 +294,11 @@
   // full draw: nodes, then labels with dodge+flip
   function drawGraph(ctx, canvas, data, opts = {}) {
     clearAndFrame(ctx, canvas, opts);
+    if (data.priorEdges && data.priorEdges.length) {
+      ctx.globalAlpha = 0.25;
+      drawEdges(ctx, data.priorEdges, opts);
+      ctx.globalAlpha = 1.0;
+    }
     if (data.edges && data.edges.length) drawEdges(ctx, data.edges, opts);
     (data.points || []).forEach((p) =>
       drawNode(ctx, p, data.selectedPoint, opts)

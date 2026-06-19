@@ -561,15 +561,10 @@ function renderEdges() {
         <div><label>Strength label</label><input type="text" data-edge="${i}" data-field="strength_label" value="${esc(e.strength_label || '')}"></div>
       </div>
       <label>Description</label><input type="text" data-edge="${i}" data-field="description" value="${esc(e.description || '')}">
-      <div class="inline-group">
-        <div class="checkbox-row">
-          <input type="checkbox" data-edge="${i}" data-field="directed" ${e.directed?'checked':''}>
-          <label>Directed</label>
-        </div>
-        <div class="checkbox-row">
-          <input type="checkbox" data-edge="${i}" data-field="show_prior_edges" ${e.show_prior_edges?'checked':''}>
-          <label>Show prior edges</label>
-        </div>
+      <div class="checkbox-row">
+        <input type="checkbox" data-edge="${i}" data-field="show_prior_edges" ${e.show_prior_edges?'checked':''}>
+        <label>Show prior edges</label>
+        <span style="font-size:12px;color:#6c757d;margin-left:6px">Show edges from previous pages while drawing this type</span>
       </div>
     </div>
   `).join('');
@@ -595,7 +590,7 @@ function addEdge() {
   if (!config.canvas.edges) config.canvas.edges = [];
   collectEdges();
   config.canvas.edges.push({
-    id: '', label: '', color: '#666666', directed: false,
+    id: '', label: '', color: '#666666',
     show_prior_edges: false, verb: '', strength_label: '', description: ''
   });
   renderEdges();
