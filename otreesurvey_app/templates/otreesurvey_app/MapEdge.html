@@ -349,6 +349,7 @@
     const EDGE_COLOR     = "{{ edge_type.color }}";
     const EDGE_VERB      = "{{ edge_type.verb }}";
     const EDGE_VERB_NOUN = "{{ edge_type.verb }}s";
+    const EDGE_DIRECTED  = {{ edge_type.directed|default:"false" }};
 
     // Server-provided data
     const priorPoints     = {{ belief_points|safe }};
@@ -435,6 +436,7 @@
         from: from, to: to,
         polarity: EDGE_TYPE_ID,
         color: EDGE_COLOR,
+        directed: EDGE_DIRECTED,
         strength: pendingStrength,
         timestamp: new Date().toISOString(),
         nudge_level: nudgeLevel
@@ -459,9 +461,24 @@
 
     btnCancel.addEventListener("click", cancelRating);
 
+    // -- Prior edges (from earlier edge pages) --
+    var priorEdgesResolved = [];
+    if (priorEdgesRaw && priorEdgesRaw.length) {
+      var pointsByLabel = {};
+      points.forEach(function(p){ pointsByLabel[p.full_label || p.label] = p; });
+      priorEdgesRaw.forEach(function(e){
+        var fromLabel = e.stance_1 || (e.from && e.from.label ? e.from.label : e.from);
+        var toLabel   = e.stance_2 || (e.to   && e.to.label   ? e.to.label   : e.to);
+        var fp = pointsByLabel[fromLabel], tp = pointsByLabel[toLabel];
+        if (fp && tp) {
+          priorEdgesResolved.push({ from: fp, to: tp, color: e.color || '#999', strength: e.strength, polarity: e.polarity, directed: !!e.directed });
+        }
+      });
+    }
+
     // -- Drawing --
     function drawCanvas(){
-      NoOverlap.drawGraph(ctx, canvas, { points: points, edges: edges, selectedPoint: selectedPoint });
+      NoOverlap.drawGraph(ctx, canvas, { points: points, edges: edges, selectedPoint: selectedPoint, priorEdges: priorEdgesResolved });
     }
 
     // -- Helpers --
@@ -610,6 +627,7 @@
         stance_2:    e.stance_2  || (e.to   && e.to.label   ? e.to.label   : e.to),
         polarity:    e.polarity  || EDGE_TYPE_ID,
         color:       e.color     || EDGE_COLOR,
+        directed:    !!e.directed,
         strength:    e.strength  != null ? e.strength : null,
         timestamp:   e.timestamp || null,
         nudge_level: e.nudge_level || 0,
