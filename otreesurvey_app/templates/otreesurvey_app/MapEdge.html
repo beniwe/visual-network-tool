@@ -349,7 +349,7 @@
     const EDGE_COLOR     = "{{ edge_type.color }}";
     const EDGE_VERB      = "{{ edge_type.verb }}";
     const EDGE_VERB_NOUN = "{{ edge_type.verb }}s";
-    const EDGE_DIRECTED  = {{ edge_type.directed|default:"false" }};
+    const EDGE_DIRECTED  = {{ edge_type.directed|yesno:"true,false" }};
 
     // Server-provided data
     const priorPoints     = {{ belief_points|safe }};
@@ -623,8 +623,8 @@
 
     function normalizeEdge(e){
       return {
-        stance_1:    e.stance_1  || (e.from && e.from.label ? e.from.label : e.from),
-        stance_2:    e.stance_2  || (e.to   && e.to.label   ? e.to.label   : e.to),
+        stance_1:    e.stance_1  || (e.from && (e.from.full_label || e.from.label)),
+        stance_2:    e.stance_2  || (e.to   && (e.to.full_label   || e.to.label)),
         polarity:    e.polarity  || EDGE_TYPE_ID,
         color:       e.color     || EDGE_COLOR,
         directed:    !!e.directed,
