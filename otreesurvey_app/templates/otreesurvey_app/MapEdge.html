@@ -349,7 +349,7 @@
     const EDGE_COLOR     = "{{ edge_type.color }}";
     const EDGE_VERB      = "{{ edge_type.verb }}";
     const EDGE_VERB_NOUN = "{{ edge_type.verb }}s";
-    const EDGE_DIRECTED  = {{ edge_type.directed|yesno:"true,false" }};
+    const EDGE_DIRECTED  = {% if edge_type.directed %}true{% else %}false{% endif %};
 
     // Server-provided data
     const priorPoints     = {{ belief_points|safe }};
