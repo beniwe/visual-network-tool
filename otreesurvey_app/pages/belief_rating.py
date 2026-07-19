@@ -38,19 +38,20 @@ class DynamicBeliefRating(Page):
             use_scale_token = False
         else:
             # Closed mode: use predefined items
-            from ..dynamic_items import DYNAMIC_ITEMS
+            from ..dynamic_items import get_dynamic_items
 
+            items = get_dynamic_items()
             if condition in _INTERVIEW_CONDITIONS:
                 detected_ids = {
                     n.get('stance_id')
                     for n in json.loads(player.generated_nodes or '[]')
                     if n.get('stance_id')
                 }
-                source = [item for item in DYNAMIC_ITEMS if item['id'] in detected_ids]
+                source = [item for item in items if item['id'] in detected_ids]
                 if not source:
-                    source = list(DYNAMIC_ITEMS)
+                    source = list(items)
             else:
-                source = list(DYNAMIC_ITEMS)
+                source = list(items)
 
             use_v2 = condition in _V2_CONDITIONS
             source = [
@@ -133,14 +134,15 @@ class DynamicBeliefRating(Page):
                 })
         else:
             # Closed mode: use predefined items for sentence building
-            from ..dynamic_items import DYNAMIC_ITEMS
+            from ..dynamic_items import get_dynamic_items
+            items = get_dynamic_items()
             use_v2 = cond in _V2_CONDITIONS
             use_noprefix = cond in _NOPREFIX_CONDITIONS
             use_tag = cond in _TAG_CONDITIONS
-            item_lookup = {item["id"]: item for item in DYNAMIC_ITEMS}
+            item_lookup = {item["id"]: item for item in items}
             template_lookup = {
                 item["id"]: item.get("template_v2", item["template"]) if use_v2 else item["template"]
-                for item in DYNAMIC_ITEMS
+                for item in items
             }
 
             final = []

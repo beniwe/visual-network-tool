@@ -2,11 +2,10 @@ import json
 from otree.api import Page
 
 from ..helpers import (
-    stamp, get_node_display_data, _node_color, get_demo_nodes,
+    stamp, get_node_display_data, _node_color, get_demo_nodes, get_min_nodes,
     _CANVAS_CONDITIONS, _INTERVIEW_CONDITIONS, _SHORT_LABEL_CONDITIONS,
     _NOPREFIX_CONDITIONS,
 )
-from ..constants import C
 
 
 class MapVideoIntro(Page):
@@ -34,7 +33,7 @@ class MapVideoIntro(Page):
     @staticmethod
     def is_displayed(player):
         return (
-            player.num_nodes >= C.NUM_NODES_THRESHOLD
+            player.num_nodes >= get_min_nodes()
             and player.consent_given
             and player.field_maybe_none('condition') in _CANVAS_CONDITIONS
         )
@@ -97,7 +96,7 @@ class MapIntro(Page):
     @staticmethod
     def is_displayed(player):
         return (
-            player.num_nodes >= C.NUM_NODES_THRESHOLD
+            player.num_nodes >= get_min_nodes()
             and player.consent_given
             and player.field_maybe_none('condition') in _CANVAS_CONDITIONS
         )
@@ -127,7 +126,7 @@ class MapNodePlacement(Page):
     @staticmethod
     def is_displayed(player):
         return (
-            player.num_nodes >= C.NUM_NODES_THRESHOLD
+            player.num_nodes >= get_min_nodes()
             and player.consent_given
             and player.field_maybe_none('condition') in _CANVAS_CONDITIONS
         )
@@ -211,7 +210,7 @@ class MapEdgePage(Page):
         idx = player.participant.vars.get('_edge_page_counter', 0)
         return (
             idx < len(edge_types)
-            and player.num_nodes >= C.NUM_NODES_THRESHOLD
+            and player.num_nodes >= get_min_nodes()
             and player.consent_given
             and player.field_maybe_none('condition') in _CANVAS_CONDITIONS
         )
@@ -308,7 +307,7 @@ class FinalNetworkView(Page):
         final_cfg = get_config().get("final_network", {})
         return (
             final_cfg.get("enabled", False)
-            and player.num_nodes >= C.NUM_NODES_THRESHOLD
+            and player.num_nodes >= get_min_nodes()
             and player.consent_given
             and player.field_maybe_none('condition') in _CANVAS_CONDITIONS
         )

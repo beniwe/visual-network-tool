@@ -64,6 +64,13 @@ def _node_radius(value, dim_id=None):
     return round(size_range[0] + t * (size_range[1] - size_range[0]))
 
 
+def get_min_nodes():
+    """Minimum nodes a participant needs to continue past the canvas pages."""
+    from .config_loader import get_config
+    from .constants import C
+    return get_config()["canvas"].get("min_nodes", C.NUM_NODES_THRESHOLD)
+
+
 def get_node_display_data(player):
     """Return [{belief, short_label, radius, color}, ...] for every node in final_nodes."""
     canvas = _get_canvas_config()

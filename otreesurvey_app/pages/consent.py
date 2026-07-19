@@ -1,8 +1,7 @@
 import json
 from otree.api import Page
 
-from ..helpers import stamp, get_demo_nodes, _INTERVIEW_CONDITIONS
-from ..constants import C
+from ..helpers import stamp, get_demo_nodes, get_min_nodes, _INTERVIEW_CONDITIONS
 
 
 class Consent(Page):
@@ -65,7 +64,7 @@ class LinkCompletion(Page):
     def is_displayed(player):
         return (
             player.consent_given
-            and player.num_nodes >= C.NUM_NODES_THRESHOLD
+            and player.num_nodes >= get_min_nodes()
         )
 
     @staticmethod
@@ -87,7 +86,7 @@ class LinkFailedChecks(Page):
     def is_displayed(player):
         return (
             player.consent_given
-            and player.num_nodes < C.NUM_NODES_THRESHOLD
+            and player.num_nodes < get_min_nodes()
         )
 
     @staticmethod

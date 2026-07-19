@@ -1,8 +1,7 @@
 import json
 from otree.api import Page
 
-from ..helpers import stamp, _CANVAS_CONDITIONS
-from ..constants import C
+from ..helpers import stamp, get_min_nodes, _CANVAS_CONDITIONS
 
 
 class CanvasFeedback(Page):
@@ -25,7 +24,7 @@ class CanvasFeedback(Page):
         return (
             player.consent_given
             and player.field_maybe_none('condition') in _CANVAS_CONDITIONS
-            and player.num_nodes >= C.NUM_NODES_THRESHOLD
+            and player.num_nodes >= get_min_nodes()
         )
 
     @staticmethod

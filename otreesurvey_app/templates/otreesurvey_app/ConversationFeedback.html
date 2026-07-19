@@ -284,6 +284,9 @@
 <script>
   // ====== LIVE / LLM STATE (GLOBAL) ======
   let llmDone = false; // becomes true ONLY when msg.done === true
+  let llmGaveUp = false; // true once we stop retrying, so nobody gets stuck here
+  let llmFailures = 0;
+  const LLM_MAX_ATTEMPTS = 3;
 
   function liveRecv(msg) {
     const el = document.getElementById('llmStatus');
@@ -300,11 +303,24 @@
         window.updateConvFeedbackNext();
       }
     } else if (msg.done === false) {
-      el.textContent =
-        '⚠️ We are having trouble analyzing your interview. Please wait a moment while we try again.';
+      llmFailures += 1;
       el.style.color = '#b54708';
 
-      // Optional retry
+      if (llmFailures >= LLM_MAX_ATTEMPTS) {
+        // Stop retrying and let the participant continue. The next page
+        // falls back to the full statement list when nothing was detected.
+        llmGaveUp = true;
+        el.textContent =
+          'We could not analyse your interview automatically. You can continue to the next part.';
+        if (window.updateConvFeedbackNext) {
+          window.updateConvFeedbackNext();
+        }
+        return;
+      }
+
+      el.textContent =
+        '⚠️ We are having trouble analyzing your interview. Please wait a moment while we try again.';
+
       setTimeout(() => {
         try {
           liveSend({ retry: true });
@@ -418,7 +434,7 @@
     }
 
     function canProceed() {
-      return touched.size >= total && llmDone;
+      return touched.size >= total && (llmDone || llmGaveUp);
     }
 
     // expose globally so liveRecv can call it
@@ -435,7 +451,7 @@
 
       if (!allSlidersAnswered) {
         llmGateMessage.textContent = '';
-      } else if (allSlidersAnswered && !llmDone) {
+      } else if (allSlidersAnswered && !llmDone && !llmGaveUp) {
         llmGateMessage.textContent =
           'You have answered all questions. Please wait a moment while the AI finishes analyzing your interview.';
       } else if (ok) {
@@ -498,7 +514,7 @@
           return;
         }
 
-        if (!llmDone) {
+        if (!llmDone && !llmGaveUp) {
           e.preventDefault();
           alert(
             'We are still analyzing your interview in the background.\n\n' +
