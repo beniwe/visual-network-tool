@@ -16,10 +16,8 @@ Both modes return a normalized list of dicts:
 from pydantic import BaseModel
 from typing import List
 
-from .client import call_llm, async_call_llm, async_call_llm_raw
+from .client import call_llm, async_call_llm
 from ..config_loader import get_config
-
-import json
 
 
 # =============================================================================
@@ -129,26 +127,10 @@ def detect_closed_stances(questions_answers: dict) -> List[dict]:
 
 
 async def async_detect_closed_stances_raw(questions_answers: dict) -> tuple:
-    """Async closed-mode extraction returning (enriched_list, prompt_used).
-    Uses raw LLM call for backward compat with ConversationFeedback's manual parsing."""
+    """Async closed-mode extraction returning (enriched_list, prompt_used)."""
     prompt = _make_closed_prompt(questions_answers)
-    raw = await async_call_llm_raw(prompt, temp=0.1)
-
-    try:
-        parsed = json.loads(raw)
-    except json.JSONDecodeError:
-        cleaned = raw.replace("```json", "").replace("```", "").strip()
-        parsed = json.loads(cleaned)
-
-    if isinstance(parsed, dict) and "detected" in parsed:
-        raw_list = parsed["detected"]
-    elif isinstance(parsed, dict) and "results" in parsed:
-        raw_list = parsed["results"]
-    elif isinstance(parsed, list):
-        raw_list = parsed
-    else:
-        raise ValueError("Response not in expected JSON list format.")
-
+    result = await async_call_llm(StanceDetectionResult, prompt, temp=0.1)
+    raw_list = [s.model_dump() for s in result.detected]
     return _enrich_closed_raw(raw_list), prompt
 
 
@@ -274,21 +256,8 @@ def detect_open_stances(questions_answers: dict) -> List[dict]:
 async def async_detect_open_stances_raw(questions_answers: dict) -> tuple:
     """Async open-mode extraction returning (node_list, prompt_used)."""
     prompt = _make_open_prompt(questions_answers)
-    raw = await async_call_llm_raw(prompt, temp=0.3)
-
-    try:
-        parsed = json.loads(raw)
-    except json.JSONDecodeError:
-        cleaned = raw.replace("```json", "").replace("```", "").strip()
-        parsed = json.loads(cleaned)
-
-    if isinstance(parsed, dict) and "results" in parsed:
-        raw_list = parsed["results"]
-    elif isinstance(parsed, list):
-        raw_list = parsed
-    else:
-        raise ValueError("Response not in expected JSON list format.")
-
+    result = await async_call_llm(OpenNodeList, prompt, temp=0.3)
+    raw_list = [n.model_dump() for n in result.results]
     return _normalize_open_raw(raw_list), prompt
 
 
