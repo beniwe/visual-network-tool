@@ -34,6 +34,10 @@
 <!-- Hidden voice transcription input -->
 <input type="hidden" id="voice_answer" name="voice_answer" />
 
+<div id="mic-unavailable-notice" class="alert alert-warning mt-3" style="display: none">
+  Microphone not available. Please type your answer below.
+</div>
+
 <!-- Transcript preview (appears after transcription) -->
 <div id="transcript-review" class="card mt-3" style="display: none">
   <div class="card-body">
@@ -190,8 +194,18 @@
   const transcriptEditor = document.getElementById('transcript-editor');
   const editTranscriptBtn = document.getElementById('edit-transcript-btn');
 
-  // --- Load mode preference ---
-  let inputMode = localStorage.getItem('inputMode') || 'voice';
+  // --- Input mode from study config: 'text', 'voice' or 'both' ---
+  const INPUT_MODE = '{{ input_mode }}';
+  const voiceAllowed = INPUT_MODE !== 'text';
+
+  let inputMode =
+    INPUT_MODE === 'both'
+      ? localStorage.getItem('inputMode') || 'voice'
+      : INPUT_MODE;
+
+  toggleInputButton.style.display =
+    INPUT_MODE === 'both' ? 'inline-block' : 'none';
+
   applyInputMode(inputMode);
 
   function applyInputMode(mode) {
@@ -216,95 +230,101 @@
     applyInputMode(inputMode === 'voice' ? 'text' : 'voice');
   });
 
-  // --- Voice recording setup ---
-  navigator.mediaDevices
-    .getUserMedia({ audio: true })
-    .then((stream) => {
-      mediaRecorder = new MediaRecorder(stream);
+  // --- Voice recording setup (skipped when the study is text-only) ---
+  if (voiceAllowed) {
+    navigator.mediaDevices
+      .getUserMedia({ audio: true })
+      .then((stream) => {
+        mediaRecorder = new MediaRecorder(stream);
 
-      mediaRecorder.addEventListener('dataavailable', (event) => {
-        audioChunks.push(event.data);
-      });
+        mediaRecorder.addEventListener('dataavailable', (event) => {
+          audioChunks.push(event.data);
+        });
 
-      mediaRecorder.addEventListener('stop', () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-        audioChunks = [];
-        const audioURL = URL.createObjectURL(audioBlob);
-        playback.src = audioURL;
-
-        document.getElementById('recordDuration').textContent = recordedTime;
-        savedMessage.style.display = 'inline';
-        playback.style.display = 'none';
-
-        hasRecordedBefore = true;
-        lastInputType = 'voice';
-        recordButton.textContent = '🔴 Record Again';
-        recordButton.classList.remove('recording-active');
-
-        // Reset transcript preview while we process a new one
-        transcriptReview.style.display = 'none';
-        transcriptText.textContent = '';
-        transcriptEditor.value = '';
-        document.getElementById('voice_answer').value = '';
-        updateSubmitButtonState();
-
-        isProcessingTranscript = true;
-        submitButton.disabled = true;
-        transcribingMsg.style.display = 'block';
-
-        const formData = new FormData();
-        formData.append('audio', audioBlob, 'recording.webm');
-
-        fetch('WHISPER_TRANSCRIPTION_ENDPOINT', {
-          method: 'POST',
-          body: formData,
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.transcript) {
-              // Save transcript, show preview, allow edits
-              document.getElementById('voice_answer').value = data.transcript;
-              transcriptText.textContent = data.transcript;
-              transcriptEditor.value = data.transcript;
-              transcriptReview.style.display = 'block';
-              console.log('✅ Transcript saved:', data.transcript);
-              updateSubmitButtonState();
-            }
-          })
-          .catch((err) => {
-            console.error('❌ Audio upload failed:', err);
-            alert(
-              "We couldn't transcribe your recording. You can try again or switch to writing."
-            );
-          })
-          .finally(() => {
-            isProcessingTranscript = false;
-            transcribingMsg.style.display = 'none';
-            updateSubmitButtonState();
-          });
-      });
-
-      recordButton.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (!isRecording) {
+        mediaRecorder.addEventListener('stop', () => {
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
           audioChunks = [];
-          mediaRecorder.start();
-          isRecording = true;
-          recordedTime = 0;
-          recordButton.textContent = '🛑 Stop Recording';
-          recordButton.classList.add('recording-active');
-          timer = setInterval(() => recordedTime++, 1000);
-        } else {
-          mediaRecorder.stop();
-          clearInterval(timer);
-          isRecording = false;
-        }
+          const audioURL = URL.createObjectURL(audioBlob);
+          playback.src = audioURL;
+
+          document.getElementById('recordDuration').textContent = recordedTime;
+          savedMessage.style.display = 'inline';
+          playback.style.display = 'none';
+
+          hasRecordedBefore = true;
+          lastInputType = 'voice';
+          recordButton.textContent = '🔴 Record Again';
+          recordButton.classList.remove('recording-active');
+
+          // Reset transcript preview while we process a new one
+          transcriptReview.style.display = 'none';
+          transcriptText.textContent = '';
+          transcriptEditor.value = '';
+          document.getElementById('voice_answer').value = '';
+          updateSubmitButtonState();
+
+          isProcessingTranscript = true;
+          submitButton.disabled = true;
+          transcribingMsg.style.display = 'block';
+
+          const formData = new FormData();
+          formData.append('audio', audioBlob, 'recording.webm');
+
+          fetch('WHISPER_TRANSCRIPTION_ENDPOINT', {
+            method: 'POST',
+            body: formData,
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.transcript) {
+                // Save transcript, show preview, allow edits
+                document.getElementById('voice_answer').value = data.transcript;
+                transcriptText.textContent = data.transcript;
+                transcriptEditor.value = data.transcript;
+                transcriptReview.style.display = 'block';
+                console.log('✅ Transcript saved:', data.transcript);
+                updateSubmitButtonState();
+              }
+            })
+            .catch((err) => {
+              console.error('❌ Audio upload failed:', err);
+              alert(
+                "We couldn't transcribe your recording. You can try again or switch to writing."
+              );
+            })
+            .finally(() => {
+              isProcessingTranscript = false;
+              transcribingMsg.style.display = 'none';
+              updateSubmitButtonState();
+            });
+        });
+
+        recordButton.addEventListener('click', (e) => {
+          e.preventDefault();
+          if (!isRecording) {
+            audioChunks = [];
+            mediaRecorder.start();
+            isRecording = true;
+            recordedTime = 0;
+            recordButton.textContent = '🛑 Stop Recording';
+            recordButton.classList.add('recording-active');
+            timer = setInterval(() => recordedTime++, 1000);
+          } else {
+            mediaRecorder.stop();
+            clearInterval(timer);
+            isRecording = false;
+          }
+        });
+      })
+      .catch((err) => {
+        console.error('Microphone access denied:', err);
+        applyInputMode('text');
+        if (recordButton) recordButton.style.display = 'none';
+        if (toggleInputButton) toggleInputButton.style.display = 'none';
+        const notice = document.getElementById('mic-unavailable-notice');
+        if (notice) notice.style.display = 'block';
       });
-    })
-    .catch((err) => {
-      console.error('❌ Microphone access denied:', err);
-      alert('Microphone access is required for voice input.');
-    });
+  }
 
   // --- Transcript edit toggle ---
   editTranscriptBtn.addEventListener('click', () => {

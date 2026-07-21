@@ -10,6 +10,12 @@ def _max_turns():
     return get_config()["interview"].get("max_turns", 8)
 
 
+def _input_mode():
+    from ..config_loader import get_config
+    mode = get_config()["interview"].get("input_mode", "both")
+    return mode if mode in ("text", "voice", "both") else "both"
+
+
 class Information(Page):
     form_model = 'player'
 
@@ -47,6 +53,7 @@ class InterviewMain(Page):
             conversation=conversation,
             current_turn=player.participant.vars["interview_turns"],
             max_turns=_max_turns(),
+            input_mode=_input_mode(),
             progress_percentage=int(100 * player.participant.vars["interview_turns"] / _max_turns())
         )
 

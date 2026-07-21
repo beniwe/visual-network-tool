@@ -238,6 +238,27 @@
 
       ctx.lineWidth = w;
       ctx.stroke();
+
+      if (edge.directed) {
+        var dx = edge.to.x - edge.from.x;
+        var dy = edge.to.y - edge.from.y;
+        var len = Math.hypot(dx, dy);
+        if (len > 0) {
+          var ux = dx / len, uy = dy / len;
+          var toR = edge.to.radius || e.defaultRadius || 15;
+          var tipX = edge.to.x - ux * toR;
+          var tipY = edge.to.y - uy * toR;
+          var headLen = Math.max(10, w * 2.5);
+          var angle = Math.atan2(dy, dx);
+          ctx.beginPath();
+          ctx.moveTo(tipX, tipY);
+          ctx.lineTo(tipX - headLen * Math.cos(angle - 0.4), tipY - headLen * Math.sin(angle - 0.4));
+          ctx.lineTo(tipX - headLen * Math.cos(angle + 0.4), tipY - headLen * Math.sin(angle + 0.4));
+          ctx.closePath();
+          ctx.fillStyle = ctx.strokeStyle;
+          ctx.fill();
+        }
+      }
     }
   }
 
