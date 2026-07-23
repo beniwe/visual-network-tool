@@ -302,6 +302,9 @@ class FinalNetworkView(Page):
         show_transcript = cond in _INTERVIEW_CONDITIONS
         qa_pairs = json.loads(player.conversation_json or "[]") if show_transcript else []
 
+        # Surfaced in the devserver debug panel only; hidden from participants.
+        centrality = json.loads(player.field_maybe_none('centrality_json') or '{}')
+
         return dict(
             belief_points=belief_points,
             all_edges_json=json.dumps(all_edges),
@@ -310,6 +313,9 @@ class FinalNetworkView(Page):
             questions_json=json.dumps(questions),
             transcript=qa_pairs,
             show_transcript=show_transcript,
+            centrality_top_degree=centrality.get('top_degree'),
+            centrality_top_eigenvector=centrality.get('top_eigenvector'),
+            centrality_nodes=centrality.get('nodes'),
         )
 
     @staticmethod
