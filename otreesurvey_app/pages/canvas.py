@@ -248,7 +248,7 @@ class MapEdgePage(Page):
 class FinalNetworkView(Page):
     """Read-only view of the completed network with configurable questions."""
     form_model = 'player'
-    form_fields = ['final_network_responses_json']
+    form_fields = ['final_network_responses_json', 'network_image']
 
     @staticmethod
     def vars_for_template(player):

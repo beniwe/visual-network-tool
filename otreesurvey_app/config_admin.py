@@ -85,21 +85,57 @@ class ConfigAPIEndpoint(HTTPEndpoint):
         return JSONResponse({'ok': True})
 
 
+class NetworkImageExportEndpoint(HTTPEndpoint):
+
+    async def dispatch(self):
+        request = Request(self.scope, receive=self.receive)
+        if _needs_auth() and not _is_logged_in(request):
+            response = Response('Unauthorized', status_code=401)
+            await response(self.scope, self.receive, self.send)
+            return
+
+        data = await run_in_threadpool(self._build_zip)
+        response = Response(
+            data,
+            media_type='application/zip',
+            headers={'Content-Disposition': 'attachment; filename="network_images.zip"'},
+        )
+        await response(self.scope, self.receive, self.send)
+
+    def _build_zip(self):
+        from otree.common import get_models_module
+        from otree.database import session_scope, dbq
+        from .data_export import build_image_zip
+
+        Player = get_models_module('otreesurvey_app').Player
+        images = []
+        with session_scope():
+            for player in dbq(Player):
+                player._is_frozen = False
+                img = player.field_maybe_none('network_image')
+                if img:
+                    images.append((f'{player.participant.code}.png', img))
+        return build_image_zip(images)
+
+
 _NAV_INJECT_SCRIPT = b"""<script>
 (function(){
   var ul = document.querySelector('#top_menu .navbar-nav');
   if (!ul) return;
-  var exists = Array.from(ul.querySelectorAll('a')).some(function(a){ return a.href.indexOf('/config') !== -1; });
-  if (!exists) {
+  function addLink(href, label){
+    var exists = Array.from(ul.querySelectorAll('a')).some(function(a){ return a.getAttribute('href') === href; });
+    if (exists) return;
     var li = document.createElement('li');
     li.className = 'nav-item';
     var a = document.createElement('a');
     a.className = 'nav-link';
-    a.href = '/config';
-    a.textContent = 'Study Config';
+    a.href = href;
+    a.textContent = label;
     li.appendChild(a);
     ul.appendChild(li);
   }
+  addLink('/config', 'Study Config');
+  addLink('/export-network-images', 'Network Images');
   var path = window.location.pathname.replace(/\\/$/, '') || '/';
   ul.querySelectorAll('a.nav-link').forEach(function(a){
     var href = a.getAttribute('href').replace(/\\/$/, '') || '/';

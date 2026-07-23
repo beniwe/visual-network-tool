@@ -10,7 +10,31 @@ The row-building here is plain and takes dicts, so it can be tested without
 the database. `custom_export` in __init__.py adapts player objects to it.
 """
 
+import base64
+import io
 import json
+import zipfile
+
+
+def build_image_zip(images):
+    """images: list of (filename, data_url). Returns zip bytes of the PNGs."""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for name, data_url in images:
+            png = _decode_data_url(data_url)
+            if png:
+                zf.writestr(name, png)
+    return buf.getvalue()
+
+
+def _decode_data_url(data_url):
+    if not data_url or "," not in data_url:
+        return None
+    _, b64 = data_url.split(",", 1)
+    try:
+        return base64.b64decode(b64)
+    except (ValueError, TypeError):
+        return None
 
 
 HEADER = [

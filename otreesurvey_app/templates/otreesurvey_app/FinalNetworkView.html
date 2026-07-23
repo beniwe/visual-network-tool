@@ -187,6 +187,7 @@
 </div>
 
 <input type="hidden" name="final_network_responses_json" id="final_network_responses_json" value="" />
+<input type="hidden" name="network_image" id="network_image" value="" />
 
 {{ next_button }}
 
@@ -374,6 +375,9 @@
     // Serialize on submit
     document.querySelector("form").addEventListener("submit", function(){
       document.getElementById("final_network_responses_json").value = JSON.stringify(responses);
+      try {
+        document.getElementById("network_image").value = canvas.toDataURL("image/png");
+      } catch (e) {}
     });
 
     // Transcript toggle

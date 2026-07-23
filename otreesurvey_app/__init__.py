@@ -22,9 +22,13 @@ class _ConfigRouteHook:
         import importlib
         mod = importlib.import_module(name)
         from starlette.routing import Route
-        from .config_admin import ConfigAPIEndpoint, ConfigPageEndpoint, NavInjectMiddleware
+        from .config_admin import (
+            ConfigAPIEndpoint, ConfigPageEndpoint, NavInjectMiddleware,
+            NetworkImageExportEndpoint,
+        )
         mod.app.routes.insert(-3, Route('/config', ConfigPageEndpoint, name='ConfigPage'))
         mod.app.routes.insert(-3, Route('/api/study-config', ConfigAPIEndpoint, name='ConfigAPI'))
+        mod.app.routes.insert(-3, Route('/export-network-images', NetworkImageExportEndpoint, name='NetworkImageExport'))
         mod.app = NavInjectMiddleware(mod.app)
         return mod
 
@@ -159,6 +163,7 @@ class Player(BasePlayer):
     dynamic_belief_ratings_json = models.LongStringField(blank=True)
     final_network_responses_json = models.LongStringField(blank=True)
     centrality_json = models.LongStringField(blank=True)
+    network_image = models.LongStringField(blank=True)
 
 
 for i in range(C.MAX_BELIEF_ITEMS):
