@@ -233,6 +233,17 @@ class MapEdgePage(Page):
         stamp(player, f'edge_{edge_id}:submit')
         player.participant.vars['_edge_page_counter'] = idx + 1
 
+        # Network is complete after the last edge type — compute centrality.
+        if idx == len(edge_types) - 1:
+            from ..centrality import compute_centrality
+            node_labels = [nd["belief"] for nd in get_node_display_data(player)]
+            all_edges = []
+            for j in range(len(edge_types)):
+                raw = player.field_maybe_none(f'edge_data_{j}') or ''
+                if raw:
+                    all_edges.extend(json.loads(raw))
+            player.centrality_json = json.dumps(compute_centrality(node_labels, all_edges))
+
 
 class FinalNetworkView(Page):
     """Read-only view of the completed network with configurable questions."""

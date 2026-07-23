@@ -158,6 +158,7 @@ class Player(BasePlayer):
 
     dynamic_belief_ratings_json = models.LongStringField(blank=True)
     final_network_responses_json = models.LongStringField(blank=True)
+    centrality_json = models.LongStringField(blank=True)
 
 
 for i in range(C.MAX_BELIEF_ITEMS):
