@@ -170,6 +170,41 @@ for i in range(C.MAX_EDGE_PAGES):
     setattr(Player, f"edge_data_{i}", models.LongStringField(blank=True))
 
 
+def custom_export(players):
+    from .data_export import HEADER, build_row
+
+    yield HEADER
+    for p in players:
+        pp = p.participant
+        yield build_row({
+            "participant_code": pp.code,
+            "participant_label": pp.label or "",
+            "session_code": p.session.code,
+            "condition": p.field_maybe_none('condition') or "",
+            "consent_given": p.field_maybe_none('consent_given'),
+            "prolific_pid": p.prolific_pid,
+            "prolific_study_id": p.prolific_study_id,
+            "prolific_session_id": p.prolific_session_id,
+            "final_nodes": p.field_maybe_none('final_nodes'),
+            "edge_data_fields": [
+                p.field_maybe_none(f'edge_data_{i}') for i in range(C.MAX_EDGE_PAGES)
+            ],
+            "centrality_json": p.field_maybe_none('centrality_json'),
+            "final_network_responses_json": p.field_maybe_none('final_network_responses_json') or "",
+            "conv_overall_0_100": p.field_maybe_none('conv_overall_0_100'),
+            "conv_relevant_0_100": p.field_maybe_none('conv_relevant_0_100'),
+            "conv_easy_chat_0_100": p.field_maybe_none('conv_easy_chat_0_100'),
+            "conv_comfort_0_100": p.field_maybe_none('conv_comfort_0_100'),
+            "conv_creepy_0_100": p.field_maybe_none('conv_creepy_0_100'),
+            "conv_open_feedback": p.field_maybe_none('conv_open_feedback') or "",
+            "canvas_difficulty_placement": p.field_maybe_none('canvas_difficulty_placement'),
+            "canvas_clarity_statements": p.field_maybe_none('canvas_clarity_statements'),
+            "canvas_usability_comment": p.field_maybe_none('canvas_usability_comment') or "",
+            "final_feedback": p.field_maybe_none('final_feedback') or "",
+            "exit_status": p.field_maybe_none('exit_status') or "",
+        })
+
+
 page_sequence = [
     Consent,
     LinkNoConsent,
