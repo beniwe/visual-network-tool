@@ -65,13 +65,21 @@ def _edge_weight(edge):
         return 1.0
 
 
-def _principal_eigenvector(adjacency, iterations=200, tol=1e-10):
+def _principal_eigenvector(adjacency, iterations=1000, tol=1e-12):
     n = len(adjacency)
     if n == 0:
         return []
+    # Iterate on (A + shift*I) instead of A. Shifting by the spectral-radius
+    # bound keeps A's eigenvectors but makes the largest eigenvalue strictly
+    # dominant, so power iteration converges instead of oscillating on
+    # bipartite graphs (stars, paths).
+    shift = max((sum(abs(v) for v in row) for row in adjacency), default=0.0) or 1.0
     x = [1.0] * n
     for _ in range(iterations):
-        y = [sum(adjacency[i][j] * x[j] for j in range(n)) for i in range(n)]
+        y = [
+            sum(adjacency[i][j] * x[j] for j in range(n)) + shift * x[i]
+            for i in range(n)
+        ]
         norm = math.sqrt(sum(v * v for v in y))
         if norm == 0:
             return [0.0] * n
