@@ -35,6 +35,14 @@ ADMIN_USERNAME = 'admin'
 # for security, best to set admin password in an environment variable
 ADMIN_PASSWORD = environ.get('OTREE_ADMIN_PASSWORD')
 
+# Lock the admin down in production so survey participants (who reach the study
+# only through their own participant links) cannot open the admin, the config
+# editor, or the data exports. STUDY protects everything; DEMO would leave the
+# session data views open, so we default to STUDY. Set OTREE_AUTH_LEVEL to
+# override (e.g. 'DEMO', or '' to disable).
+_in_production = environ.get('OTREE_PRODUCTION') not in (None, '', '0')
+AUTH_LEVEL = environ.get('OTREE_AUTH_LEVEL') or ('STUDY' if _in_production else None)
+
 DEMO_PAGE_INTRO_HTML = """ """
 
 SECRET_KEY = environ.get('OTREE_SECRET_KEY', 'changeme')

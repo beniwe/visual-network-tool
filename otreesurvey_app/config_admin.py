@@ -35,7 +35,7 @@ class ConfigPageEndpoint(HTTPEndpoint):
         request = Request(self.scope, receive=self.receive)
         if _needs_auth() and not _is_logged_in(request):
             from starlette.responses import RedirectResponse
-            response = RedirectResponse('/Login')
+            response = RedirectResponse('/login')
             await response(self.scope, self.receive, self.send)
             return
 
