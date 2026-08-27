@@ -354,6 +354,7 @@
     // Server-provided data
     const priorPoints     = {{ belief_points|safe }};
     const priorEdgesRaw   = {{ belief_edges_json|safe }};
+    const excludedPairsRaw = {{ excluded_pairs_json|safe }};
     const SHORT_LABELS    = {{ short_labels }};
 
     const points = priorPoints.map(function(p){
@@ -476,6 +477,31 @@
       });
     }
 
+    // -- Mutually exclusive edge types: pairs already connected by a
+    //    conflicting type must not be reconnected here. --
+    var excludedPairKeys = {};
+    function pairKey(la, lb){ return la < lb ? la + "||" + lb : lb + "||" + la; }
+    (excludedPairsRaw || []).forEach(function(pair){
+      if (pair && pair.length === 2 && pair[0] && pair[1]) {
+        excludedPairKeys[pairKey(pair[0], pair[1])] = true;
+      }
+    });
+    function isExcludedPair(a, b){
+      return !!excludedPairKeys[pairKey(a.full_label || a.label, b.full_label || b.label)];
+    }
+
+    function showExclusiveWarning(){
+      var warn = document.getElementById("soft-warning");
+      if (!warn) return;
+      warn.className = "";
+      warn.innerHTML =
+        "You already connected these two statements with a different kind of " +
+        "relationship. Each pair can have only one of these connection types.";
+      warn.style.display = "block";
+      clearTimeout(warn._hideTimer);
+      warn._hideTimer = setTimeout(function(){ warn.style.display = "none"; }, 5000);
+    }
+
     // -- Drawing --
     function drawCanvas(){
       NoOverlap.drawGraph(ctx, canvas, { points: points, edges: edges, selectedPoint: selectedPoint, priorEdges: priorEdgesResolved });
@@ -572,6 +598,11 @@
           });
           if (existingIdx >= 0){
             edges.splice(existingIdx, 1);
+            selectedPoint = null;
+            showPanel("idle");
+            drawCanvas();
+          } else if (isExcludedPair(selectedPoint, hit)){
+            showExclusiveWarning();
             selectedPoint = null;
             showPanel("idle");
             drawCanvas();

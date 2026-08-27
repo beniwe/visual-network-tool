@@ -175,6 +175,26 @@ class MapEdgePage(Page):
                 if prev_data:
                     prior_edges.extend(json.loads(prev_data))
 
+        # Excluded pairs: pairs already connected on a prior page by an edge
+        # type that shares a mutual-exclusivity group with the current type.
+        # Independent of show_prior_edges.
+        groups = get_config()["canvas"].get("exclusive_edge_groups", [])
+        conflicting_types = set()
+        for group in groups:
+            if edge_cfg['id'] in group:
+                conflicting_types.update(group)
+        conflicting_types.discard(edge_cfg['id'])
+
+        excluded_pairs = []
+        if conflicting_types:
+            for prev_idx in range(idx):
+                prev_data = player.field_maybe_none(f'edge_data_{prev_idx}') or ''
+                if not prev_data:
+                    continue
+                for e in json.loads(prev_data):
+                    if e.get('polarity') in conflicting_types:
+                        excluded_pairs.append([e.get('stance_1'), e.get('stance_2')])
+
         pos_by_belief = {p.get('full_label', p['label']): p for p in positions}
         belief_points = [
             {
@@ -196,6 +216,7 @@ class MapEdgePage(Page):
             belief_points=belief_points,
             short_labels="true" if cond in _SHORT_LABEL_CONDITIONS else "false",
             belief_edges_json=json.dumps(prior_edges),
+            excluded_pairs_json=json.dumps(excluded_pairs),
             transcript=qa_pairs,
             show_transcript=show_transcript,
             edge_type=edge_cfg,

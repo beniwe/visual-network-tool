@@ -313,6 +313,15 @@
         </div>
         <div id="edges-list"></div>
       </fieldset>
+
+      <fieldset>
+        <legend>Mutually Exclusive Relationships</legend>
+        <div class="help" style="margin-bottom:8px">Relationship types in the same group cannot both connect the same pair of statements. For example, group "Supporting" and "Conflicting" so a pair can be one or the other, not both. Leave empty to allow any combination.</div>
+        <div class="list-controls">
+          <button class="btn btn-sm btn-primary" onclick="addExclusiveGroup()">+ Add group</button>
+        </div>
+        <div id="exclusive-groups-list"></div>
+      </fieldset>
     </div>
 
     <!-- Final Network -->
@@ -407,6 +416,7 @@ function populateForm() {
   renderItems();
   renderDimensions();
   renderEdges();
+  renderExclusiveGroups();
   renderQuestions();
   populateDimensionDropdowns();
   toggleExtractionMode();
@@ -431,6 +441,7 @@ function collectFromForm() {
   collectItems();
   collectDimensions();
   collectEdges();
+  collectExclusiveGroups();
   collectQuestions();
 }
 
@@ -701,6 +712,58 @@ function removeEdge(idx) {
   collectEdges();
   config.canvas.edges.splice(idx, 1);
   renderEdges();
+  renderExclusiveGroups();
+}
+
+function renderExclusiveGroups() {
+  var container = document.getElementById('exclusive-groups-list');
+  if (!container) return;
+  var edges = (config.canvas && config.canvas.edges) || [];
+  var groups = (config.canvas && config.canvas.exclusive_edge_groups) || [];
+  if (!edges.length) {
+    container.innerHTML = '<div class="help">Add relationship types first.</div>';
+    return;
+  }
+  container.innerHTML = groups.map(function(group, gi) {
+    var checks = edges.map(function(e) {
+      var id = e.id || '';
+      var checked = group.indexOf(id) >= 0 ? ' checked' : '';
+      return '<label style="display:inline-flex;align-items:center;gap:4px;margin:0 14px 0 0;font-weight:400">' +
+        '<input type="checkbox" data-group="' + gi + '" data-eid="' + esc(id) + '"' + checked + ' style="width:auto">' +
+        esc(e.label || id) + '</label>';
+    }).join('');
+    return '<div class="list-item" data-group-idx="' + gi + '">' +
+      '<div class="list-item-actions"><button class="remove-btn" onclick="removeExclusiveGroup(' + gi + ')">Remove</button></div>' +
+      '<div style="margin-top:4px">' + checks + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function collectExclusiveGroups() {
+  if (!config.canvas) return;
+  var byIndex = {};
+  document.querySelectorAll('#exclusive-groups-list input[type=checkbox]').forEach(function(cb) {
+    var gi = cb.dataset.group;
+    if (!byIndex[gi]) byIndex[gi] = [];
+    if (cb.checked) byIndex[gi].push(cb.dataset.eid);
+  });
+  config.canvas.exclusive_edge_groups = Object.keys(byIndex)
+    .map(function(k){ return byIndex[k]; })
+    .filter(function(g){ return g.length >= 1; });
+}
+
+function addExclusiveGroup() {
+  if (!config.canvas) config.canvas = { nodes: {}, edges: [] };
+  collectExclusiveGroups();
+  if (!config.canvas.exclusive_edge_groups) config.canvas.exclusive_edge_groups = [];
+  config.canvas.exclusive_edge_groups.push([]);
+  renderExclusiveGroups();
+}
+
+function removeExclusiveGroup(idx) {
+  collectExclusiveGroups();
+  config.canvas.exclusive_edge_groups.splice(idx, 1);
+  renderExclusiveGroups();
 }
 
 // -- Final network questions --

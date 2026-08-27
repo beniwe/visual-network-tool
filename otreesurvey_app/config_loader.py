@@ -96,6 +96,11 @@ def validate_config(config=None):
         edge_ids = [e.get("id") for e in edges]
         if len(edge_ids) != len(set(edge_ids)):
             errors.append("canvas.edges has duplicate ids.")
+        known_ids = set(edge_ids)
+        for group in canvas.get("exclusive_edge_groups", []):
+            for eid in group:
+                if eid not in known_ids:
+                    errors.append(f"exclusive_edge_groups references unknown edge id '{eid}'.")
 
     return errors
 

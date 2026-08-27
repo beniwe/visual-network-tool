@@ -245,6 +245,9 @@
         "description": "one thing contradicts or undermines another"
       }
     ],
+    "exclusive_edge_groups": [
+      ["positive", "negative"]
+    ],
     "min_nodes": 3,
     "max_nodes": 10
   },
