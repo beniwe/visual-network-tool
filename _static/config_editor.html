@@ -219,6 +219,23 @@
         <label for="interview_closing">Closing question</label>
         <textarea id="interview_closing" data-path="interview.closing_question" rows="3"></textarea>
       </fieldset>
+
+      <fieldset>
+        <legend>AI Interviewer</legend>
+        <div class="help" style="margin-bottom:8px">Shape how the AI interviewer behaves. The core interview logic (pacing, follow-ups, wrap-up) stays fixed, so these fields cannot break the interview. Write <code>{topic}</code> to insert the topic above.</div>
+
+        <label for="interview_persona">Interviewer style</label>
+        <input type="text" id="interview_persona" data-path="interview.interviewer_persona">
+        <div class="help">A short description of the interviewer's manner, e.g. "thoughtful, empathetic, and curious".</div>
+
+        <label for="interview_focus">What to explore</label>
+        <textarea id="interview_focus" data-path="interview.focus_areas" rows="5"></textarea>
+        <div class="help">Broad areas the interviewer should try to draw out, one per line. Guidance only - it never reads these to the participant as direct questions.</div>
+
+        <label for="interview_extra">Extra instructions (optional)</label>
+        <textarea id="interview_extra" data-path="interview.extra_instructions" rows="3"></textarea>
+        <div class="help">Any additional guidance for the interviewer. Leave blank if not needed.</div>
+      </fieldset>
     </div>
 
     <!-- Node Extraction -->

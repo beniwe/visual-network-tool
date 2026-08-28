@@ -23,7 +23,10 @@
     "input_mode": "both",
     "topic": "meat-eating",
     "opening_question": "In this interview, we're talking about meat-eating. What's the first thing that comes to your mind?",
-    "closing_question": "Is there anything else — whether practical, personal, ethical, or just something that matters to you — that shapes how you think about meat that we haven't touched on?"
+    "closing_question": "Is there anything else — whether practical, personal, ethical, or just something that matters to you — that shapes how you think about meat that we haven't touched on?",
+    "interviewer_persona": "thoughtful, empathetic, and curious",
+    "focus_areas": "- Their habits and how they came about\n- Anything that shapes how they think or feel about {topic} - enjoyment, health, ethics, convenience, identity, social pressure, concerns, values, or anything else\n- Their social context - what people around them do and think",
+    "extra_instructions": ""
   },
 
   "node_extraction": {

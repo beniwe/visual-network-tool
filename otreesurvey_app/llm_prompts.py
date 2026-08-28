@@ -39,6 +39,16 @@ class StanceDetectionResult(BaseModel):
 # INTERVIEW
 # =============================================================================
 
+DEFAULT_INTERVIEWER_PERSONA = "thoughtful, empathetic, and curious"
+
+DEFAULT_FOCUS_AREAS = (
+    "- Their habits and how they came about\n"
+    "- Anything that shapes how they think or feel about {topic} - enjoyment, health,\n"
+    "  ethics, convenience, identity, social pressure, concerns, values, or anything else\n"
+    "- Their social context - what people around them do and think"
+)
+
+
 def get_opening_question():
     return get_config()["interview"]["opening_question"]
 
@@ -59,6 +69,13 @@ def generate_conversational_question(history: List[UserAnswer], n_rounds=8) -> I
     interview_cfg = cfg["interview"]
     topic = interview_cfg.get("topic", "the topic")
     closing = interview_cfg.get("closing_question", "Is there anything else you'd like to share?")
+    persona = interview_cfg.get("interviewer_persona") or DEFAULT_INTERVIEWER_PERSONA
+    focus_areas = (interview_cfg.get("focus_areas") or DEFAULT_FOCUS_AREAS).replace("{topic}", topic)
+    extra_instructions = (interview_cfg.get("extra_instructions") or "").strip()
+    extra_block = (
+        "\n\nAdditional instructions from the researcher:\n" + extra_instructions
+        if extra_instructions else ""
+    )
 
     conversation_str = ""
     for turn in history:
@@ -68,7 +85,7 @@ def generate_conversational_question(history: List[UserAnswer], n_rounds=8) -> I
     penultimate_turn = n_rounds - 1
 
     system_prompt = f"""
-You are a thoughtful, empathetic, and curious interviewer. Your job is to have a
+You are a {persona} interviewer. Your job is to have a
 genuine conversation about {topic} — not to conduct a structured survey.
 
 Current conversation:
@@ -82,10 +99,7 @@ You are not trying to ensure every topic gets covered. What comes up naturally i
 the data. What does not come up is also the data.
 
 What you want to learn about, broadly:
-- Their habits and how they came about
-- Anything that shapes how they think or feel about {topic} — enjoyment, health,
-  ethics, convenience, identity, social pressure, concerns, values, or anything else
-- Their social context — what people around them do and think
+{focus_areas}
 
 =*=*=
 
@@ -145,6 +159,7 @@ Guidelines:
 
 Conversation constraints:
 - You have {n_rounds} total turns; this is round {current_round} of {n_rounds}.
+{extra_block}
 
 Generate the next interviewer question.
     """
