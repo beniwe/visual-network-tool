@@ -260,6 +260,21 @@
           <div id="items-list"></div>
         </fieldset>
       </div>
+
+      <div id="extraction-open-section" style="display:none">
+        <fieldset>
+          <legend>Open Extraction Settings</legend>
+          <div class="help" style="margin-bottom:8px">Used only in Open mode - these control how the AI extracts beliefs from the interview.</div>
+
+          <label for="extraction_max_statements">Maximum number of beliefs to extract</label>
+          <input type="number" id="extraction_max_statements" data-path="node_extraction.open.max_statements" min="1" max="30">
+          <div class="help">The most statements the AI will pull from a participant's interview.</div>
+
+          <label for="extraction_open_extra">Extra instructions (optional)</label>
+          <textarea id="extraction_open_extra" data-path="node_extraction.open.extra_instructions" rows="3"></textarea>
+          <div class="help">Any additional guidance for the AI when extracting beliefs. Leave blank if not needed.</div>
+        </fieldset>
+      </div>
     </div>
 
     <!-- Node Rating -->
@@ -568,6 +583,7 @@ function rebuildOpenState(map, removedIdx) {
 function toggleExtractionMode() {
   var mode = document.getElementById('extraction_mode').value;
   document.getElementById('extraction-items-section').style.display = mode === 'closed' ? '' : 'none';
+  document.getElementById('extraction-open-section').style.display = mode === 'open' ? '' : 'none';
 }
 
 // -- Dimensions --

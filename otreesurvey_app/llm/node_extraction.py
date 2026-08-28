@@ -199,7 +199,7 @@ interviewee's behavior.
 =*=*=
 
 Extraction rules:
-1. Extract a maximum of {max_nodes} short statements (max 10 words each).
+1. Extract a maximum of {max_statements} short statements (max 10 words each).
 2. Extract at least 1 statement about the personal habits of the interviewee.
 3. For each statement provide:
    - stance: concise summary of the attitude or behavior (no effects)
@@ -216,7 +216,7 @@ Extraction guidelines:
 not both. Split compound statements.
 3. Each statement must be well-formed in isolation and something the interviewee \
 would plausibly agree with.
-
+{extra_block}
 =*=*=
 
 Output Format (JSON ONLY):
@@ -237,11 +237,17 @@ Return ONLY the JSON object.
 def _make_open_prompt(questions_answers: dict) -> str:
     cfg = get_config()
     topic = cfg["interview"].get("topic", "the topic")
-    max_nodes = cfg["canvas"].get("max_nodes", 10)
+    open_cfg = cfg["node_extraction"].get("open", {})
+    max_statements = open_cfg.get("max_statements", 10)
+    extra = (open_cfg.get("extra_instructions") or "").strip()
+    extra_block = (
+        "\n\nAdditional instructions from the researcher:\n" + extra if extra else ""
+    )
     transcript = "\n".join(f"Q: {q}\nA: {a}" for q, a in questions_answers.items())
     return _OPEN_PROMPT.format(
         topic=topic,
-        max_nodes=max_nodes,
+        max_statements=max_statements,
+        extra_block=extra_block,
         transcript=transcript,
     )
 

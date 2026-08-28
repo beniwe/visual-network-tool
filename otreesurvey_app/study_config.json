@@ -31,6 +31,10 @@
 
   "node_extraction": {
     "mode": "closed",
+    "open": {
+      "max_statements": 10,
+      "extra_instructions": ""
+    },
     "items": [
       {
         "id": "taste",
