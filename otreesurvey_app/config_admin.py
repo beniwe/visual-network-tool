@@ -15,6 +15,10 @@ _EDITOR_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), '..', '_static', 'config_editor.html'
 )
 
+_MEDIA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+_ALLOWED_VIDEO_EXTS = {'.mp4', '.webm', '.ogg', '.mov', '.m4v'}
+_MAX_VIDEO_BYTES = 50 * 1024 * 1024
+
 
 def _is_logged_in(request):
     return request.session.get(AUTH_COOKIE_NAME) == AUTH_COOKIE_VALUE
@@ -116,6 +120,76 @@ class NetworkImageExportEndpoint(HTTPEndpoint):
                 if img:
                     images.append((f'{player.participant.code}.png', img))
         return build_image_zip(images)
+
+
+class VideoUploadEndpoint(HTTPEndpoint):
+
+    async def dispatch(self):
+        request = Request(self.scope, receive=self.receive)
+        if _needs_auth() and not _is_logged_in(request):
+            await self._send(Response('Unauthorized', status_code=401))
+            return
+
+        try:
+            form = await request.form()
+        except Exception:
+            await self._send(JSONResponse({'error': 'Invalid upload.'}, status_code=400))
+            return
+
+        upload = form.get('video')
+        if upload is None or not getattr(upload, 'filename', ''):
+            await self._send(JSONResponse({'error': 'No file provided.'}, status_code=400))
+            return
+
+        ext = os.path.splitext(upload.filename)[1].lower()
+        if ext not in _ALLOWED_VIDEO_EXTS:
+            await self._send(JSONResponse(
+                {'error': f'Unsupported file type "{ext}". Use mp4, webm, ogg or mov.'},
+                status_code=400,
+            ))
+            return
+
+        data = await upload.read()
+        if len(data) > _MAX_VIDEO_BYTES:
+            await self._send(JSONResponse(
+                {'error': 'File too large (max 50 MB).'}, status_code=400,
+            ))
+            return
+
+        url = await run_in_threadpool(self._save, data, ext)
+        await self._send(JSONResponse({'ok': True, 'url': url}))
+
+    async def _send(self, response):
+        await response(self.scope, self.receive, self.send)
+
+    def _save(self, data, ext):
+        os.makedirs(_MEDIA_DIR, exist_ok=True)
+        # keep only one intro video
+        for name in os.listdir(_MEDIA_DIR):
+            if name.startswith('intro_video.'):
+                try:
+                    os.remove(os.path.join(_MEDIA_DIR, name))
+                except OSError:
+                    pass
+        filename = 'intro_video' + ext
+        with open(os.path.join(_MEDIA_DIR, filename), 'wb') as fp:
+            fp.write(data)
+        return '/media/' + filename
+
+
+class MediaEndpoint(HTTPEndpoint):
+    """Serves uploaded media (e.g. the intro video). Public - participants need it."""
+
+    async def dispatch(self):
+        from starlette.responses import FileResponse
+        request = Request(self.scope, receive=self.receive)
+        name = os.path.basename(request.path_params.get('filename', ''))
+        path = os.path.join(_MEDIA_DIR, name)
+        if name and os.path.isfile(path):
+            response = FileResponse(path)
+        else:
+            response = Response('Not found', status_code=404)
+        await response(self.scope, self.receive, self.send)
 
 
 _NAV_INJECT_SCRIPT = b"""<script>

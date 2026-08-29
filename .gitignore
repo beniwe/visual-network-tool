@@ -34,3 +34,6 @@ otree_data/
 # IDE
 .vscode/
 .idea/
+
+# uploaded media (intro video etc.) - not committed
+otreesurvey_app/uploads/

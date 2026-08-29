@@ -295,9 +295,14 @@
         <legend>Intro Video</legend>
         <div class="help" style="margin-bottom:8px">The short tutorial video shown before the mapping task.</div>
 
-        <label for="canvas_intro_video_url">Video URL</label>
+        <label>Video</label>
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:4px; flex-wrap:wrap">
+          <label class="btn btn-sm btn-primary" style="margin:0; cursor:pointer">Upload video<input type="file" accept="video/*" onchange="uploadVideo(event)" style="display:none"></label>
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearVideo()">Use built-in video</button>
+          <span id="video-upload-status" style="font-size:12px; color:#6c757d"></span>
+        </div>
         <input type="text" id="canvas_intro_video_url" data-path="canvas.intro_video_url" placeholder="Leave blank to use the built-in demo video">
-        <div class="help">Direct link to an .mp4 file. Leave blank to keep the built-in demo video. If you use your own video, also update the demo statements below and the example label so they match what the video shows.</div>
+        <div class="help">Upload your own video (mp4/webm/mov), or paste a direct link to a video file. Leave blank to keep the built-in demo video. If you use your own video, also update the demo statements below and the example label so they match what the video shows. Note: an uploaded file is stored on the server - on hosts with a temporary filesystem it may need re-uploading after a restart.</div>
 
         <label for="canvas_intro_video_label">Video example label</label>
         <input type="text" id="canvas_intro_video_label" data-path="canvas.intro_video_example_label">
@@ -810,6 +815,34 @@ function removeExclusiveGroup(idx) {
   collectExclusiveGroups();
   config.canvas.exclusive_edge_groups.splice(idx, 1);
   renderExclusiveGroups();
+}
+
+// -- Intro video upload --
+function uploadVideo(ev) {
+  var file = ev.target.files && ev.target.files[0];
+  ev.target.value = '';
+  if (!file) return;
+  var status = document.getElementById('video-upload-status');
+  status.textContent = 'Uploading ' + file.name + ' ...';
+  var fd = new FormData();
+  fd.append('video', file);
+  fetch('/api/upload-video', { method: 'POST', body: fd })
+    .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+    .then(function (res) {
+      if (res.ok && res.j.url) {
+        document.getElementById('canvas_intro_video_url').value = res.j.url;
+        status.textContent = 'Uploaded. Click "Save Config" to apply.';
+      } else {
+        status.textContent = 'Upload failed: ' + (res.j.error || 'unknown error');
+      }
+    })
+    .catch(function (e) { status.textContent = 'Upload failed: ' + e.message; });
+}
+
+function clearVideo() {
+  document.getElementById('canvas_intro_video_url').value = '';
+  document.getElementById('video-upload-status').textContent =
+    'Using built-in video. Click "Save Config" to apply.';
 }
 
 // -- Final network questions --

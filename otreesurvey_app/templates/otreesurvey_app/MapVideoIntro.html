@@ -117,7 +117,7 @@
   </p>
   <video controls style="width: 100%; border-radius: 8px">
     {% if intro_video_url %}
-    <source src="{{ intro_video_url }}" type="video/mp4" />
+    <source src="{{ intro_video_url }}" />
     {% else %}
     <source src="{% static 'otreesurvey_app/demo_canvas.mp4' %}" type="video/mp4" />
     {% endif %}
