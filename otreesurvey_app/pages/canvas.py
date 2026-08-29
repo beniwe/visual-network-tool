@@ -12,7 +12,8 @@ class MapVideoIntro(Page):
     @staticmethod
     def vars_for_template(player):
         from ..config_loader import get_config
-        edge_types = get_config()["canvas"]["edges"]
+        canvas_cfg = get_config()["canvas"]
+        edge_types = canvas_cfg["edges"]
         demo_statements = [
             {
                 "text":  n["dynamic_sentence_simple"],
@@ -28,6 +29,8 @@ class MapVideoIntro(Page):
             demo_statements=demo_statements,
             own_statements_colored=demo_statements,
             edge_types=edge_types_display,
+            intro_video_url=canvas_cfg.get("intro_video_url") or "",
+            intro_video_example_label=canvas_cfg.get("intro_video_example_label") or "learning Spanish",
         )
 
     @staticmethod

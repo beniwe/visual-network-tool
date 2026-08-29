@@ -292,6 +292,19 @@
     <!-- Canvas -->
     <div class="tab-panel" id="tab-canvas">
       <fieldset>
+        <legend>Intro Video</legend>
+        <div class="help" style="margin-bottom:8px">The short tutorial video shown before the mapping task.</div>
+
+        <label for="canvas_intro_video_url">Video URL</label>
+        <input type="text" id="canvas_intro_video_url" data-path="canvas.intro_video_url" placeholder="Leave blank to use the built-in demo video">
+        <div class="help">Direct link to an .mp4 file. Leave blank to keep the built-in demo video. If you use your own video, also update the demo statements below and the example label so they match what the video shows.</div>
+
+        <label for="canvas_intro_video_label">Video example label</label>
+        <input type="text" id="canvas_intro_video_label" data-path="canvas.intro_video_example_label">
+        <div class="help">What the tutorial video's example is about, e.g. "learning Spanish". Shown in the text next to the video.</div>
+      </fieldset>
+
+      <fieldset>
         <legend>Canvas</legend>
         <div class="inline-group" >
           <div>

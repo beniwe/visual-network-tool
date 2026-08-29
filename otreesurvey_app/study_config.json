@@ -256,7 +256,9 @@
       ["positive", "negative"]
     ],
     "min_nodes": 3,
-    "max_nodes": 10
+    "max_nodes": 10,
+    "intro_video_url": "",
+    "intro_video_example_label": "learning Spanish"
   },
 
   "final_network": {

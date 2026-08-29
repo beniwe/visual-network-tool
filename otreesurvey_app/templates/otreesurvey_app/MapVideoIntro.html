@@ -90,7 +90,7 @@
 <div class="card">
   <p class="eyebrow">Example statements used in the video</p>
   <p class="muted">
-    The video below uses these example statements about learning Spanish.
+    The video below uses these example statements about {{ intro_video_example_label }}.
     <span class="chip chip-green">Green</span> circles are statements the
     example person agreed with; <span class="chip chip-red">red</span> circles
     are statements they disagreed with. On the next pages, you will do the tasks
@@ -112,14 +112,15 @@
   <p class="eyebrow">Watch before you start</p>
   <p class="muted">
     Please watch this short video (under 1 minute) that shows how to do this
-    using an example of learning Spanish. When you have finished watching, click
+    using an example of {{ intro_video_example_label }}. When you have finished watching, click
     the "Next" button to start the first task with your own statements.
   </p>
   <video controls style="width: 100%; border-radius: 8px">
-    <source
-      src="{% static 'otreesurvey_app/demo_canvas.mp4' %}"
-      type="video/mp4"
-    />
+    {% if intro_video_url %}
+    <source src="{{ intro_video_url }}" type="video/mp4" />
+    {% else %}
+    <source src="{% static 'otreesurvey_app/demo_canvas.mp4' %}" type="video/mp4" />
+    {% endif %}
   </video>
 </div>
 
