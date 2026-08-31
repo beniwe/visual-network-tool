@@ -34,10 +34,6 @@
 <!-- Hidden voice transcription input -->
 <input type="hidden" id="voice_answer" name="voice_answer" />
 
-<div id="mic-unavailable-notice" class="alert alert-warning mt-3" style="display: none">
-  Microphone not available. Please type your answer below.
-</div>
-
 <!-- Transcript preview (appears after transcription) -->
 <div id="transcript-review" class="card mt-3" style="display: none">
   <div class="card-body">
@@ -321,8 +317,6 @@
         applyInputMode('text');
         if (recordButton) recordButton.style.display = 'none';
         if (toggleInputButton) toggleInputButton.style.display = 'none';
-        const notice = document.getElementById('mic-unavailable-notice');
-        if (notice) notice.style.display = 'block';
       });
   }
 

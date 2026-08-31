@@ -89,13 +89,7 @@
 
 <div class="card">
   <p class="eyebrow">Example statements used in the video</p>
-  <p class="muted">
-    The video below uses these example statements about {{ intro_video_example_label }}.
-    <span class="chip chip-green">Green</span> circles are statements the
-    example person agreed with; <span class="chip chip-red">red</span> circles
-    are statements they disagreed with. On the next pages, you will do the tasks
-    shown in the video with the statements you just created yourself.
-  </p>
+  <p class="muted">{{ intro_video_text_1|safe }}</p>
   <ul style="list-style: none; padding: 0; margin: 10px 0 0">
     {% for stmt in own_statements_colored %}
     <li style="display: flex; align-items: center; gap: 10px; margin: 8px 0">
@@ -110,11 +104,7 @@
 
 <div class="card">
   <p class="eyebrow">Watch before you start</p>
-  <p class="muted">
-    Please watch this short video (under 1 minute) that shows how to do this
-    using an example of {{ intro_video_example_label }}. When you have finished watching, click
-    the "Next" button to start the first task with your own statements.
-  </p>
+  <p class="muted">{{ intro_video_text_2|safe }}</p>
   <video controls style="width: 100%; border-radius: 8px">
     {% if intro_video_url %}
     <source src="{{ intro_video_url }}" />

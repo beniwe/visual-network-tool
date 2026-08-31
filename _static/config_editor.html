@@ -304,9 +304,13 @@
         <input type="text" id="canvas_intro_video_url" data-path="canvas.intro_video_url" placeholder="Leave blank to use the built-in demo video">
         <div class="help">Upload your own video (mp4/webm/mov), or paste a direct link to a video file. Leave blank to keep the built-in demo video. If you use your own video, also update the demo statements below and the example label so they match what the video shows. Note: an uploaded file is stored on the server - on hosts with a temporary filesystem it may need re-uploading after a restart.</div>
 
-        <label for="canvas_intro_video_label">Video example label</label>
-        <input type="text" id="canvas_intro_video_label" data-path="canvas.intro_video_example_label">
-        <div class="help">What the tutorial video's example is about, e.g. "learning Spanish". Shown in the text next to the video.</div>
+        <label for="canvas_intro_video_text1">Text above the example statements</label>
+        <textarea id="canvas_intro_video_text1" data-path="canvas.intro_video_text_1" rows="4"></textarea>
+        <div class="help">Shown in the "Example statements used in the video" box. Describe what the video's example is about so it matches your video. Basic HTML is allowed (e.g. the coloured Green/red labels); plain text is fine too.</div>
+
+        <label for="canvas_intro_video_text2">Text above the video</label>
+        <textarea id="canvas_intro_video_text2" data-path="canvas.intro_video_text_2" rows="4"></textarea>
+        <div class="help">Shown in the "Watch before you start" box, right above the video.</div>
       </fieldset>
 
       <fieldset>
@@ -692,7 +696,7 @@ function renderEdges() {
       '</div>' +
       '<span class="drag-handle" title="Drag to reorder">::</span>' +
       '<div class="inline-group">' +
-        '<div><label>Label</label><input type="text" data-edge="' + i + '" data-field="label" value="' + esc(e.label || '') + '">' +
+        '<div><label>Label</label><input type="text" data-edge="' + i + '" data-field="label" value="' + esc(e.label || '') + '" onchange="collectEdges(); renderExclusiveGroups();">' +
           '<div class="help">Name shown to participants (e.g. "Supporting")</div></div>' +
         '<div style="flex:0 0 80px"><label>Color</label><input type="color" data-edge="' + i + '" data-field="color" value="' + (e.color || '#666666') + '"></div>' +
       '</div>' +
@@ -755,6 +759,7 @@ function addEdge() {
     show_prior_edges: false, verb: '', strength_label: '', description: ''
   });
   renderEdges();
+  renderExclusiveGroups();
 }
 
 function removeEdge(idx) {

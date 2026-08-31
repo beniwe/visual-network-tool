@@ -228,4 +228,5 @@ page_sequence = [
     CanvasFeedback,
     Feedback,
     LinkCompletion,
+    LinkFailedChecks,
 ]

@@ -8,6 +8,20 @@ from ..helpers import (
 )
 
 
+_DEFAULT_INTRO_TEXT_1 = (
+    'The video below uses these example statements about learning Spanish. '
+    '<span class="chip chip-green">Green</span> circles are statements the '
+    'example person agreed with; <span class="chip chip-red">red</span> circles '
+    'are statements they disagreed with. On the next pages, you will do the tasks '
+    'shown in the video with the statements you just created yourself.'
+)
+_DEFAULT_INTRO_TEXT_2 = (
+    'Please watch this short video (under 1 minute) that shows how to do this '
+    'using an example of learning Spanish. When you have finished watching, click '
+    'the "Next" button to start the first task with your own statements.'
+)
+
+
 class MapVideoIntro(Page):
     @staticmethod
     def vars_for_template(player):
@@ -30,7 +44,8 @@ class MapVideoIntro(Page):
             own_statements_colored=demo_statements,
             edge_types=edge_types_display,
             intro_video_url=canvas_cfg.get("intro_video_url") or "",
-            intro_video_example_label=canvas_cfg.get("intro_video_example_label") or "learning Spanish",
+            intro_video_text_1=canvas_cfg.get("intro_video_text_1") or _DEFAULT_INTRO_TEXT_1,
+            intro_video_text_2=canvas_cfg.get("intro_video_text_2") or _DEFAULT_INTRO_TEXT_2,
         )
 
     @staticmethod
