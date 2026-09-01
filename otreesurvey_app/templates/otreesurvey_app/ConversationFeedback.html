@@ -593,8 +593,10 @@
   function advance() {
     if (advanced) return;
     advanced = true;
-    const form = document.getElementById('conv-feedback-form');
-    if (form) form.submit();
+    const btn =
+      document.querySelector('#conv-feedback-form .otree-btn-next') ||
+      document.querySelector('.otree-btn-next');
+    if (btn) btn.click();
   }
 
   function liveRecv(msg) {
