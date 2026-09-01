@@ -490,6 +490,18 @@
       return !!excludedPairKeys[pairKey(a.full_label || a.label, b.full_label || b.label)];
     }
 
+    // Is there any pair the participant is still allowed to connect here? If
+    // every pair already carries a mutually exclusive edge, forcing a new
+    // connection would deadlock, so we let them continue with none.
+    function hasConnectablePair(){
+      for (var i = 0; i < points.length; i++){
+        for (var j = i + 1; j < points.length; j++){
+          if (!isExcludedPair(points[i], points[j])) return true;
+        }
+      }
+      return false;
+    }
+
     function showExclusiveWarning(){
       var warn = document.getElementById("soft-warning");
       if (!warn) return;
@@ -710,7 +722,7 @@
           return;
         }
 
-        if (edges.length === 0) {
+        if (edges.length === 0 && hasConnectablePair()) {
           if (warn) {
             warn.className = "forced";
             warn.innerHTML =
