@@ -132,11 +132,20 @@ _GALLERY_HTML = """<!doctype html>
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
     .card2 { background: #fff; border: 1px solid #e2e2e2; border-radius: 8px;
       padding: 10px; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
-    .card2 img { width: 100%; border-radius: 6px; background: #fafafa; display: block; }
+    .card2 img { width: 100%; border-radius: 6px; background: #fafafa; display: block; cursor: zoom-in; }
     .card2 .cap { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px; }
     .card2 .cap .code { color: #333; font-weight: 600; }
     .card2 .cap .label { color: #888; }
     .empty { color: #777; padding: 40px 0; text-align: center; }
+    .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.82); display: none;
+      align-items: center; justify-content: center; z-index: 50; padding: 30px; }
+    .lightbox.open { display: flex; }
+    .lightbox img { max-width: 95vw; max-height: 86vh; border-radius: 8px; background: #fff;
+      box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+    .lightbox .lb-cap { position: absolute; bottom: 16px; left: 0; right: 0; text-align: center;
+      color: #fff; font-size: 14px; }
+    .lightbox .lb-close { position: absolute; top: 12px; right: 20px; color: #fff; font-size: 34px;
+      line-height: 1; cursor: pointer; background: none; border: none; }
   </style>
 </head>
 <body>
@@ -162,6 +171,12 @@ _GALLERY_HTML = """<!doctype html>
     <span class="count" id="count"></span>
   </div>
   <div id="gallery"></div>
+</div>
+
+<div class="lightbox" id="lightbox">
+  <button class="lb-close" id="lbClose" aria-label="Close">&times;</button>
+  <img id="lbImg" src="" alt="network">
+  <div class="lb-cap" id="lbCap"></div>
 </div>
 
 <script>
@@ -191,7 +206,8 @@ _GALLERY_HTML = """<!doctype html>
     g.innerHTML = DATA.map(function(s){
       var cards = s.items.map(function(it){
         return '<div class="card2">' +
-          '<img loading="lazy" src="/network-image/' + encodeURIComponent(it.code) + '" alt="network">' +
+          '<img loading="lazy" src="/network-image/' + encodeURIComponent(it.code) + '" alt="network"' +
+          ' data-code="' + esc(it.code) + '" data-label="' + esc(it.label || '') + '">' +
           '<div class="cap"><input type="checkbox" class="img-check" value="' + esc(it.code) + '">' +
           '<span class="code">' + esc(it.code) + '</span>' +
           (it.label ? '<span class="label">' + esc(it.label) + '</span>' : '') +
@@ -203,6 +219,11 @@ _GALLERY_HTML = """<!doctype html>
         '<div class="grid">' + cards + '</div></div>';
     }).join('');
 
+    g.querySelectorAll('.card2 img').forEach(function(img){
+      img.addEventListener('click', function(){
+        openLightbox(img.getAttribute('src'), img.dataset.code, img.dataset.label);
+      });
+    });
     g.querySelectorAll('.img-check').forEach(function(c){ c.addEventListener('change', updateCount); });
     g.querySelectorAll('.session-check').forEach(function(sc){
       sc.addEventListener('change', function(){
@@ -228,6 +249,20 @@ _GALLERY_HTML = """<!doctype html>
       URL.revokeObjectURL(url);
     });
   }
+
+  var lightbox = document.getElementById('lightbox');
+  function openLightbox(src, code, label){
+    document.getElementById('lbImg').src = src;
+    document.getElementById('lbCap').textContent = code + (label ? ' - ' + label : '');
+    lightbox.classList.add('open');
+  }
+  function closeLightbox(){
+    lightbox.classList.remove('open');
+    document.getElementById('lbImg').src = '';
+  }
+  lightbox.addEventListener('click', function(e){ if (e.target === lightbox) closeLightbox(); });
+  document.getElementById('lbClose').addEventListener('click', closeLightbox);
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeLightbox(); });
 
   document.getElementById('saveSelected').addEventListener('click', function(){ download(selectedCodes()); });
   document.getElementById('saveAll').addEventListener('click', function(){ download(allCodes()); });
