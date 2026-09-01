@@ -16,6 +16,11 @@ def _input_mode():
     return mode if mode in ("text", "voice", "both") else "both"
 
 
+def _show_feedback_page():
+    from ..config_loader import get_config
+    return bool(get_config()["interview"].get("show_feedback_page", False))
+
+
 class Information(Page):
     form_model = 'player'
 
@@ -105,7 +110,8 @@ class InterviewMain(Page):
 
 class ConversationFeedback(Page):
     form_model = 'player'
-    form_fields = [
+
+    _RATING_FIELDS = [
         'conv_overall_0_100', 'conv_overall_cat',
         'conv_relevant_0_100', 'conv_relevant_cat',
         'conv_easy_chat_0_100', 'conv_easy_chat_cat',
@@ -113,6 +119,14 @@ class ConversationFeedback(Page):
         'conv_creepy_0_100', 'conv_creepy_cat',
         'conv_open_feedback',
     ]
+
+    @staticmethod
+    def get_form_fields(player):
+        return ConversationFeedback._RATING_FIELDS if _show_feedback_page() else []
+
+    @staticmethod
+    def vars_for_template(player):
+        return dict(show_feedback_page=_show_feedback_page())
 
     @staticmethod
     def is_displayed(player):

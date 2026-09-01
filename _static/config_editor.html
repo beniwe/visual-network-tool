@@ -87,6 +87,7 @@
         <li class="nav-item"><a class="nav-link" href="/export">Data</a></li>
         <li class="nav-item"><a class="nav-link" href="/server_check">Server Check</a></li>
         <li class="nav-item"><a class="nav-link active" href="/config">Study Config</a></li>
+        <li class="nav-item"><a class="nav-link" href="/export-network-images">Network Images</a></li>
       </ul>
     </div>
   </div>
@@ -212,6 +213,12 @@
             </select>
           </div>
         </div>
+
+        <div class="checkbox-row">
+          <input type="checkbox" id="interview_show_feedback" data-path="interview.show_feedback_page">
+          <label for="interview_show_feedback">Show interview rating page</label>
+        </div>
+        <div class="help">When off, participants see a short loading screen while their answers are analyzed and continue automatically. When on, they first rate the interview on a few sliders.</div>
 
         <label for="interview_opening">Opening question</label>
         <textarea id="interview_opening" data-path="interview.opening_question" rows="3"></textarea>

@@ -111,7 +111,7 @@
     margin-bottom: 1rem;
   }
 </style>
-{% endblock %} {% block content %}
+{% endblock %} {% block content %} {% if show_feedback_page %}
 
 <div class="instructions">
   <h3>Your experience with the conversation</h3>
@@ -533,4 +533,99 @@
   });
 </script>
 
-{% endblock %}
+{% else %}
+
+<style>
+  .buffer-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.25rem;
+    min-height: 40vh;
+    text-align: center;
+    color: #333;
+  }
+  .buffer-spinner {
+    width: 46px;
+    height: 46px;
+    border: 5px solid #e0e0e0;
+    border-top-color: #424242;
+    border-radius: 50%;
+    animation: buffer-spin 0.9s linear infinite;
+  }
+  @keyframes buffer-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  .buffer-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+  }
+  .buffer-sub {
+    color: #666;
+    max-width: 460px;
+  }
+</style>
+
+<div class="buffer-wrap">
+  <div class="buffer-spinner" id="bufferSpinner"></div>
+  <div class="buffer-title" id="bufferTitle">
+    Analyzing your interview...
+  </div>
+  <div class="buffer-sub" id="bufferSub">
+    This only takes a moment. You will continue automatically.
+  </div>
+</div>
+
+<form method="post" id="conv-feedback-form" style="display: none">
+  {{ next_button }}
+</form>
+
+<script>
+  let llmDone = false;
+  let llmGaveUp = false;
+  let llmFailures = 0;
+  const LLM_MAX_ATTEMPTS = 3;
+  let advanced = false;
+
+  function advance() {
+    if (advanced) return;
+    advanced = true;
+    const form = document.getElementById('conv-feedback-form');
+    if (form) form.submit();
+  }
+
+  function liveRecv(msg) {
+    if (!msg) return;
+    if (msg.done === true) {
+      llmDone = true;
+      advance();
+    } else if (msg.done === false) {
+      llmFailures += 1;
+      if (llmFailures >= LLM_MAX_ATTEMPTS) {
+        llmGaveUp = true;
+        advance();
+        return;
+      }
+      setTimeout(function () {
+        try {
+          liveSend({ retry: true });
+        } catch (e) {
+          console.error('liveSend retry failed:', e);
+        }
+      }, 5000);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    try {
+      liveSend({ start: true });
+    } catch (e) {
+      console.error('liveSend not available or failed:', e);
+    }
+  });
+</script>
+
+{% endif %} {% endblock %}
