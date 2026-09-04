@@ -38,6 +38,9 @@
   .inline-group label { margin-top: 0; }
 
   .help { font-size: 12px; color: #6c757d; margin-top: 2px; }
+  .help code { background: #f1f3f5; padding: 1px 4px; border-radius: 3px; font-size: 11px; word-break: break-all; }
+  .required-banner { background: #fff8e1; border: 1px solid #ffe082; border-left: 4px solid #ff9800; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: #5f4300; }
+  label .req { color: #d32f2f; font-weight: 700; margin-left: 3px; }
 
   .list-controls { margin-bottom: 8px; }
   .list-item { border: 1px solid #e0e0e0; border-radius: 4px; padding: 12px 80px 12px 12px; margin-bottom: 8px; background: #fafafa; position: relative; }
@@ -98,6 +101,7 @@
 <div class="cfg-layout">
   <nav class="cfg-sidebar" id="sidebar">
     <a href="#" data-tab="study" class="active">Study</a>
+    <a href="#" data-tab="recruitment">Recruitment</a>
     <a href="#" data-tab="llm">AI Model</a>
     <a href="#" data-tab="interview">Interview</a>
     <a href="#" data-tab="extraction">Node Extraction</a>
@@ -132,14 +136,39 @@
         <label for="study_consent_highlight">Consent highlight text</label>
         <textarea id="study_consent_highlight" data-path="study.consent_highlight" rows="3"></textarea>
         <div class="help">Highlighted below the intro (e.g. time estimate and compensation)</div>
+      </fieldset>
+    </div>
 
-        <label for="study_completion_url">Completion URL</label>
+    <!-- Recruitment -->
+    <div class="tab-panel" id="tab-recruitment">
+      <fieldset>
+        <legend>Recruitment links (Prolific / CloudResearch)</legend>
+        <div class="required-banner">
+          <b>Required for a live study.</b> These are the links your recruitment platform
+          gives you to send participants back when they finish. Without the completion and
+          no-consent links, the study cannot return participants or confirm their payment.
+          Leave the sample values only for local testing.
+        </div>
+
+        <label for="study_completion_url">Completion link <span class="req">*</span></label>
         <input type="text" id="study_completion_url" data-path="study.completion_url">
-        <div class="help">Where participants are redirected after finishing (e.g. Prolific completion link)</div>
+        <div class="help">Where a participant goes after finishing successfully. On Prolific this is the completion URL for a "Completed" code (https://app.prolific.com/submissions/complete?cc=...); on CloudResearch it is the study Redirect URL.</div>
 
-        <label for="study_no_consent_url">No-consent URL</label>
+        <label for="study_screenout_url">Screen-out link</label>
+        <input type="text" id="study_screenout_url" data-path="study.screenout_url">
+        <div class="help">Where a participant goes when they are screened out (they did not create enough statements to be usable). On Prolific, make a separate "Screen out" completion code so these are not approved as full completions. Leave blank to send them to the completion link instead.</div>
+
+        <label for="study_no_consent_url">No-consent link <span class="req">*</span></label>
         <input type="text" id="study_no_consent_url" data-path="study.no_consent_url">
-        <div class="help">Where participants go if they decline consent</div>
+        <div class="help">Where a participant goes if they decline consent and leave.</div>
+
+        <div class="help" style="margin-top:14px; line-height:1.5">
+          <b>Passing the participant ID:</b> add <code>participant_label</code> to your study link so
+          the platform fills in each participant's ID, e.g.
+          <code>https://YOUR-HOST/join/YOUR-ROOM?participant_label={{%PROLIFIC_PID%}}</code> on Prolific
+          (use CloudResearch's <code>participantId</code> placeholder on CloudResearch). The ID is then
+          saved with the participant's data automatically - no other setup needed.
+        </div>
       </fieldset>
     </div>
 
