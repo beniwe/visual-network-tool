@@ -64,7 +64,7 @@ _DOCS_HTML = """<!doctype html>
   </style>
 </head>
 <body>
-<nav class="navbar navbar-expand-sm navbar-dark bg-dark" id="top_menu">
+<nav class="navbar navbar-expand-sm navbar-dark bg-dark sticky-top" id="top_menu">
   <div class="container-fluid">
     <a class="navbar-brand" href="/">oTree</a>
     <div class="navbar-collapse collapse">
@@ -74,9 +74,8 @@ _DOCS_HTML = """<!doctype html>
         <li class="nav-item"><a class="nav-link" href="/rooms">Rooms</a></li>
         <li class="nav-item"><a class="nav-link" href="/export">Data</a></li>
         <li class="nav-item"><a class="nav-link" href="/server_check">Server Check</a></li>
-        <li class="nav-item"><a class="nav-link" href="/config">Study Config</a></li>
+        <li class="nav-item"><a class="nav-link active" href="/config">Study Config</a></li>
         <li class="nav-item"><a class="nav-link" href="/export-network-images">Network Images</a></li>
-        <li class="nav-item"><a class="nav-link active" href="/docs">Guide</a></li>
       </ul>
     </div>
   </div>
@@ -328,7 +327,6 @@ _GALLERY_HTML = """<!doctype html>
         <li class="nav-item"><a class="nav-link" href="/server_check">Server Check</a></li>
         <li class="nav-item"><a class="nav-link" href="/config">Study Config</a></li>
         <li class="nav-item"><a class="nav-link active" href="/export-network-images">Network Images</a></li>
-        <li class="nav-item"><a class="nav-link" href="/docs">Guide</a></li>
       </ul>
     </div>
   </div>
@@ -604,7 +602,6 @@ _NAV_INJECT_SCRIPT = b"""<script>
   }
   addLink('/config', 'Study Config');
   addLink('/export-network-images', 'Network Images');
-  addLink('/docs', 'Guide');
   var path = window.location.pathname.replace(/\\/$/, '') || '/';
   ul.querySelectorAll('a.nav-link').forEach(function(a){
     var href = a.getAttribute('href').replace(/\\/$/, '') || '/';
