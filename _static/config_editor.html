@@ -44,6 +44,9 @@
 
   .list-controls { margin-bottom: 8px; }
   .list-item { border: 1px solid #e0e0e0; border-radius: 4px; padding: 12px 80px 12px 12px; margin-bottom: 8px; background: #fafafa; position: relative; }
+  .list-item.locked { border-style: dashed; background: #f1f3f5; }
+  .list-item.locked label { color: #495057; }
+  .locked-tag { position: absolute; top: 10px; right: 12px; font-size: 11px; color: #6c757d; background: #e0e0e0; padding: 1px 8px; border-radius: 3px; }
   .list-item-actions { position: absolute; top: 8px; right: 8px; }
   .remove-btn { background: none; border: 1px solid #ced4da; border-radius: 3px; padding: 2px 8px; cursor: pointer; color: #6c757d; font-size: 12px; }
   .remove-btn:hover { border-color: #dc3545; color: #dc3545; background: #fff5f5; }
@@ -317,8 +320,9 @@
     <div class="tab-panel" id="tab-rating">
       <fieldset>
         <legend>Rating Dimensions</legend>
-        <div class="help" style="margin-bottom:8px">Each dimension becomes a scale shown per statement on the rating page. For example, you might ask participants to rate both their agreement and the personal importance of each statement.</div>
-        <div class="list-controls">
+        <div class="help" style="margin-bottom:8px">Each statement is rated on the fixed Agreement scale, plus any extra dimensions you add below (e.g. personal importance).</div>
+        <div id="agreement-fixed"></div>
+        <div class="list-controls" style="margin-top:12px">
           <button class="btn btn-sm btn-primary" onclick="addDimension()">+ Add dimension</button>
         </div>
         <div id="dimensions-list"></div>
@@ -645,17 +649,35 @@ function toggleExtractionMode() {
 }
 
 // -- Dimensions --
+var AGREEMENT_DIM = { id: 'agreement', label: 'Agreement', scale_min: 1, scale_max: 6, anchor_lo: 'Strongly disagree', anchor_hi: 'Strongly agree', maps_to: 'color' };
+
+function normalizeAgreement() {
+  if (!config.node_rating) config.node_rating = { dimensions: [] };
+  if (!config.node_rating.dimensions) config.node_rating.dimensions = [];
+  var extras = config.node_rating.dimensions.filter(function(d){ return d && d.id !== 'agreement'; });
+  config.node_rating.dimensions = [Object.assign({}, AGREEMENT_DIM)].concat(extras);
+}
+
 function renderDimensions() {
+  normalizeAgreement();
+  var dims = config.node_rating.dimensions;
+
+  document.getElementById('agreement-fixed').innerHTML =
+    '<div class="list-item locked">' +
+      '<div class="locked-tag">Fixed</div>' +
+      '<label>Agreement</label>' +
+      '<div class="help">Participants rate how much they agree with each statement on a 6-point scale (Strongly disagree to Strongly agree). This is the built-in primary scale - it is always shown and cannot be edited.</div>' +
+    '</div>';
+
   var container = document.getElementById('dimensions-list');
-  var dims = (config.node_rating && config.node_rating.dimensions) || [];
-  container.innerHTML = dims.map(function(d, i) {
+  container.innerHTML = dims.slice(1).map(function(d, k) {
+    var i = k + 1;
     return '<div class="list-item" data-idx="' + i + '">' +
       '<div class="list-item-actions">' +
         '<button class="remove-btn" onclick="removeDimension(' + i + ')">Remove</button>' +
       '</div>' +
-      '<span class="drag-handle" title="Drag to reorder">::</span>' +
       '<label>Label</label><input type="text" data-dim="' + i + '" data-field="label" value="' + esc(d.label || '') + '">' +
-      '<div class="help">Name shown to participants (e.g. "Agreement", "Personal importance")</div>' +
+      '<div class="help">Name shown to participants (e.g. "Personal importance")</div>' +
       '<div class="inline-group">' +
         '<div><label>Scale min</label><input type="number" data-dim="' + i + '" data-field="scale_min" value="' + (d.scale_min != null ? d.scale_min : 1) + '"></div>' +
         '<div><label>Scale max</label><input type="number" data-dim="' + i + '" data-field="scale_max" value="' + (d.scale_max != null ? d.scale_max : 7) + '"></div>' +
@@ -668,7 +690,6 @@ function renderDimensions() {
       '</div>' +
     '</div>';
   }).join('');
-  makeSortable('dimensions-list', collectDimensions, function(){ return config.node_rating.dimensions; }, renderDimensions, populateDimensionDropdowns);
 }
 
 function collectDimensions() {
@@ -701,6 +722,7 @@ function addDimension() {
 }
 
 function removeDimension(idx) {
+  if (idx === 0) return; // agreement is fixed
   var label = (config.node_rating.dimensions[idx] || {}).label || 'this dimension';
   if (!confirm('Remove "' + label + '"?')) return;
   collectDimensions();

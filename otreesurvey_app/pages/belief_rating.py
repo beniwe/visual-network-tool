@@ -10,6 +10,20 @@ from ..helpers import (
 from ..config_loader import get_config
 
 
+# The agreement scale is fixed, not researcher-editable: the agree/disagree
+# wording per statement comes from the 6-point item labels, so the primary
+# scale must stay 1-6. Extra rating dimensions below it remain configurable.
+AGREEMENT_DIM = {
+    "id": "agreement",
+    "label": "Agreement",
+    "scale_min": 1,
+    "scale_max": 6,
+    "anchor_lo": "Strongly disagree",
+    "anchor_hi": "Strongly agree",
+    "maps_to": "color",
+}
+
+
 class DynamicBeliefRating(Page):
     form_model = 'player'
     form_fields = ['dynamic_belief_ratings_json']
@@ -72,9 +86,10 @@ class DynamicBeliefRating(Page):
 
         items = [dict(index=i, **s) for i, s in enumerate(source)]
 
-        # Primary dimension (agreement) — drives the [SCALE] token
-        primary_dim = dimensions[0] if dimensions else {}
-        extra_dims = dimensions[1:] if len(dimensions) > 1 else []
+        # Primary dimension (agreement) is fixed. Everything else the
+        # researcher configured is an extra dimension shown below it.
+        primary_dim = AGREEMENT_DIM
+        extra_dims = [d for d in dimensions if d.get("id") != "agreement"]
 
         return dict(
             items_json=json.dumps(items),
