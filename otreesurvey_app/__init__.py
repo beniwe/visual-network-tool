@@ -23,12 +23,11 @@ class _ConfigRouteHook:
         mod = importlib.import_module(name)
         from starlette.routing import Route
         from .config_admin import (
-            ConfigAPIEndpoint, ConfigPageEndpoint, DocsPageEndpoint, NavInjectMiddleware,
+            ConfigAPIEndpoint, ConfigPageEndpoint, NavInjectMiddleware,
             NetworkImageExportEndpoint, NetworkImageEndpoint,
             VideoUploadEndpoint, MediaEndpoint,
         )
         mod.app.routes.insert(-3, Route('/config', ConfigPageEndpoint, name='ConfigPage'))
-        mod.app.routes.insert(-3, Route('/docs', DocsPageEndpoint, name='DocsPage'))
         mod.app.routes.insert(-3, Route('/api/study-config', ConfigAPIEndpoint, name='ConfigAPI'))
         mod.app.routes.insert(-3, Route('/export-network-images', NetworkImageExportEndpoint, name='NetworkImageExport'))
         mod.app.routes.insert(-3, Route('/network-image/{code}', NetworkImageEndpoint, name='NetworkImage'))
