@@ -156,7 +156,9 @@ _GALLERY_HTML = """<!doctype html>
       <ul class="navbar-nav">
         <li class="nav-item"><a class="nav-link" href="/demo">Demo</a></li>
         <li class="nav-item"><a class="nav-link" href="/sessions">Sessions</a></li>
+        <li class="nav-item"><a class="nav-link" href="/rooms">Rooms</a></li>
         <li class="nav-item"><a class="nav-link" href="/export">Data</a></li>
+        <li class="nav-item"><a class="nav-link" href="/server_check">Server Check</a></li>
         <li class="nav-item"><a class="nav-link" href="/config">Study Config</a></li>
         <li class="nav-item"><a class="nav-link active" href="/export-network-images">Network Images</a></li>
       </ul>
