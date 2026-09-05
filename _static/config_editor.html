@@ -46,10 +46,10 @@
   .guide-body { max-width: 760px; color: #2a2a2a; }
   .guide-hero h2 { font-size: 22px; font-weight: 700; margin: 0 0 6px; }
   .guide-hero p { color: #555; font-size: 14px; line-height: 1.6; margin: 0; }
-  .guide-jump { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0 22px; }
+  .guide-jump { position: sticky; top: 56px; z-index: 5; display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 0; margin: 0 0 18px; background: #fff; border-bottom: 1px solid #e9ecef; }
   .guide-jump a { font-size: 12px; padding: 4px 11px; border: 1px solid #dde1e6; border-radius: 999px; color: #495057; text-decoration: none; background: #fff; cursor: pointer; }
   .guide-jump a:hover { border-color: #0d6efd; color: #0d6efd; }
-  .g-section { background: #fff; border: 1px solid #e6e6e6; border-radius: 8px; padding: 16px 22px 18px; margin-bottom: 14px; }
+  .g-section { background: #fff; border: 1px solid #e6e6e6; border-radius: 8px; padding: 16px 22px 18px; margin-bottom: 14px; scroll-margin-top: 116px; }
   .g-section h3 { font-size: 16px; font-weight: 700; margin: 0 0 10px; padding-left: 10px; border-left: 3px solid #0d6efd; }
   .g-section > p { font-size: 13.5px; line-height: 1.6; color: #495057; margin: 0 0 12px; }
   .g-field { padding: 9px 0; border-top: 1px solid #f2f2f2; }
@@ -97,7 +97,7 @@
 </head>
 <body>
 
-<nav class="navbar navbar-expand-sm navbar-dark bg-dark" id="top_menu">
+<nav class="navbar navbar-expand-sm navbar-dark bg-dark sticky-top" id="top_menu">
   <div class="container-fluid">
     <a class="navbar-brand" href="/">oTree</a>
     <div class="navbar-collapse collapse">
@@ -460,100 +460,58 @@
       <div class="guide-body">
         <div class="guide-hero">
           <h2>Setup guide</h2>
-          <p>What the settings on the other tabs do, in plain terms. Reading this tab never changes your settings - switch back to any section whenever you like.</p>
+          <p>How to put a study together and run it. Each field on the other tabs has its own short note underneath; this guide covers the bigger picture - how the tabs fit together, how to set up recruitment, where your results come out, and what to check before you launch. Reading it never changes your settings.</p>
         </div>
 
         <div class="guide-jump">
           <a onclick="guideJump('g-overview')">Overview</a>
-          <a onclick="guideJump('g-editing')">Editing &amp; saving</a>
-          <a onclick="guideJump('g-study')">Study</a>
+          <a onclick="guideJump('g-setup')">Set up a study</a>
           <a onclick="guideJump('g-recruitment')">Recruitment</a>
-          <a onclick="guideJump('g-ai')">AI Model</a>
-          <a onclick="guideJump('g-interview')">Interview</a>
-          <a onclick="guideJump('g-extraction')">Node Extraction</a>
-          <a onclick="guideJump('g-rating')">Node Rating</a>
-          <a onclick="guideJump('g-canvas')">Canvas</a>
-          <a onclick="guideJump('g-final')">Final Network</a>
+          <a onclick="guideJump('g-data')">Your data</a>
+          <a onclick="guideJump('g-tips')">Good to know</a>
         </div>
 
         <section class="g-section" id="g-overview">
           <h3>Overview</h3>
-          <p><b>How a run works.</b> A participant opens your study link and reads the consent page. If they decline, they leave right away. If they agree, they go through the task: rating statements about your topic and arranging them into a visual map of how they relate, and (in the interview version) a short AI-led conversation first. When they finish, they are sent back to your recruitment platform. Everything they do is saved, and you can download it later from the Data page and the Network Images page.</p>
+          <p><b>How a run works.</b> A participant opens your study link and reads the consent page. If they decline, they leave right away. If they agree, they go through the main task: rating statements about your topic and arranging them into a visual map of how those statements relate. When they finish, they are automatically sent back to your recruitment platform, and everything they did is saved.</p>
+          <p><b>Two versions.</b> Some participants do a short AI interview first, and then rate and map the beliefs the AI drew out of what they said. Others skip the interview and go straight to rating and mapping a fixed set of statements you wrote. Which version a participant gets is decided by their study condition, not by a single switch in here.</p>
         </section>
 
-        <section class="g-section" id="g-editing">
-          <h3>Editing and saving</h3>
-          <div class="g-field"><p>Pick a section on the left, change the values, then click <b>Save Config</b>.</p></div>
-          <div class="g-field"><p>Changes take effect for the next participant who starts. You do not need to restart anything.</p></div>
-          <div class="g-field"><p>Use <b>Download</b> to save a backup of your settings, and <b>Upload</b> to load one back in.</p></div>
-          <div class="g-field"><p>Most fields have a small grey note underneath explaining what they do.</p></div>
-        </section>
-
-        <section class="g-section" id="g-study">
-          <h3>Study</h3>
-          <div class="g-field"><span class="g-term">Study label</span><p>An internal name for this run (e.g. <code>pilot_june_2026</code>). Participants never see it; it just helps you tell runs apart.</p></div>
-          <div class="g-field"><span class="g-term">Consent intro text</span><p>The main text on the consent page.</p></div>
-          <div class="g-field"><span class="g-term">Consent highlight text</span><p>A short highlighted line under the intro, usually the time estimate and payment.</p></div>
+        <section class="g-section" id="g-setup">
+          <h3>Set up a study</h3>
+          <p>A study is put together tab by tab. A natural order to work through them:</p>
+          <div class="g-field"><span class="g-term">1. Consent - Study tab</span><p>Write the consent text and the highlighted line with your time estimate and payment. The Study label is just an internal name to tell runs apart; participants never see it.</p></div>
+          <div class="g-field"><span class="g-term">2. Statements - Node Extraction tab</span><p>Choose how statements are decided. <b>Closed</b>: everyone rates a fixed set of statements you write (as Items). <b>Open</b>: the AI reads each participant's interview and pulls out their own beliefs. Open mode only makes sense with the interview version.</p></div>
+          <div class="g-field"><span class="g-term">3. Ratings - Node Rating tab</span><p>Every statement is rated on the built-in Agreement scale. Add extra rating scales (like personal importance) only if you actually want that data.</p></div>
+          <div class="g-field"><span class="g-term">4. The map - Canvas tab</span><p>Set how many statements a participant must place, and define the relationship types they can draw between statements (e.g. Supporting, Conflicting). You can also replace the tutorial video shown before the task.</p></div>
+          <div class="g-field"><span class="g-term">5. The interview - Interview tab</span><p>For the interview version, set the topic, the opening and closing questions, and the interviewer's style. The interviewer's core behaviour is fixed, so wording changes here cannot break the conversation.</p></div>
+          <div class="g-field"><span class="g-term">6. Recruitment - Recruitment tab</span><p>Paste the links that return participants to your platform, and put the participant ID on your study link. See the next section.</p></div>
+          <div class="g-field"><span class="g-term">7. Test, then launch</span><p>Open a test link, click all the way through to the end, and confirm you land on your real completion link before sending it to participants.</p></div>
         </section>
 
         <section class="g-section" id="g-recruitment">
-          <h3>Recruitment</h3>
-          <p>The links that send participants back to Prolific or CloudResearch. Required for a real study - without them the platform never learns the participant finished, so they cannot be paid.</p>
-          <div class="g-field"><span class="g-term">Completion link</span><p>Where a participant goes after finishing successfully. On Prolific this is the completion URL for your "Completed" code (<code>https://app.prolific.com/submissions/complete?cc=...</code>); on CloudResearch it is the study Redirect URL.</p></div>
-          <div class="g-field"><span class="g-term">Screen-out link</span><p>Where a participant goes if they are screened out (they did not place enough statements to be usable). On Prolific, make a separate "Screen out" code so these are not approved as full completions. Leave blank to send them to the completion link instead.</p></div>
+          <h3>Recruitment (Prolific / CloudResearch)</h3>
+          <p>Your recruitment platform sends you participants and expects them back at the end - that is how it knows to pay them. You paste three links into the Recruitment tab so each participant is returned to the right place.</p>
+          <div class="g-field"><span class="g-term">Completion link</span><p>Where a participant goes after finishing. On Prolific it is the completion URL of your "Completed" code (<code>https://app.prolific.com/submissions/complete?cc=...</code>); on CloudResearch it is the study's Redirect URL.</p></div>
+          <div class="g-field"><span class="g-term">Screen-out link</span><p>Where a participant goes if they are screened out (see Good to know). On Prolific, make a separate "Screen out" code so they are not approved as full completions. Leave blank to send them to the completion link instead.</p></div>
           <div class="g-field"><span class="g-term">No-consent link</span><p>Where a participant goes if they decline consent.</p></div>
           <div class="g-callout"><b>Passing the participant ID.</b> Add <code>participant_label</code> to your study link so the platform fills in each person's ID, e.g. <code>https://YOUR-HOST/join/YOUR-ROOM?participant_label={{%PROLIFIC_PID%}}</code> on Prolific (use CloudResearch's <code>participantId</code> placeholder on CloudResearch). The ID is then saved with the participant's data automatically - no other setup needed.</div>
         </section>
 
-        <section class="g-section" id="g-ai">
-          <h3>AI Model</h3>
-          <p>Which AI model runs the interview and pulls beliefs out of it.</p>
-          <div class="g-field"><span class="g-term">Provider and Model</span><p>Normally set once during setup.</p></div>
-          <div class="g-field"><span class="g-term">Technical settings</span><p>Hidden until you click "technical settings" - the API key variable, temperature, and retry behaviour. Leave these as they are unless you know what they do.</p></div>
+        <section class="g-section" id="g-data">
+          <h3>Your data</h3>
+          <p>Nothing is shown to you inside this editor - results come out through two admin pages at the top.</p>
+          <div class="g-field"><span class="g-term">Data</span><p>A clean spreadsheet, one row per participant: their statement ratings, the connections they drew and how strong, their participant ID, and how they finished (completed, screened out, or declined).</p></div>
+          <div class="g-field"><span class="g-term">Network Images</span><p>Each participant's finished map as an image, grouped by session. Click an image to enlarge it, and select the ones you want to download.</p></div>
         </section>
 
-        <section class="g-section" id="g-interview">
-          <h3>Interview</h3>
-          <p>Settings for the AI conversation, used in the interview version of the study.</p>
-          <div class="g-field"><span class="g-term">Topic</span><p>The subject of the interview (e.g. meat-eating). Write <code>{topic}</code> in the interviewer fields to insert it.</p></div>
-          <div class="g-field"><span class="g-term">Maximum conversation length</span><p>How many back-and-forth turns before the interview ends.</p></div>
-          <div class="g-field"><span class="g-term">Participant input</span><p>Whether people answer by typing, speaking, or either.</p></div>
-          <div class="g-field"><span class="g-term">Show interview rating page</span><p>Off: participants see a short loading screen while their answers are analysed, then continue automatically. On: they first rate the interview on a few sliders.</p></div>
-          <div class="g-field"><span class="g-term">Opening and closing question</span><p>The first and last things the interviewer asks.</p></div>
-          <div class="g-field"><span class="g-term">AI Interviewer</span><p>Style, what to explore, and extra instructions - shape the interviewer's manner and what it tries to draw out. The core interview logic (pacing, follow-ups, wrap-up) is fixed, so these fields cannot break the interview.</p></div>
-          <div class="g-field"><p>Whether a given participant does the interview at all is decided by their assigned study condition, not by a single switch on that tab.</p></div>
-        </section>
-
-        <section class="g-section" id="g-extraction">
-          <h3>Node Extraction</h3>
-          <p>How the statements that participants rate and map are decided.</p>
-          <div class="g-field"><span class="g-term">Mode</span><p><b>Closed</b>: participants rate a fixed set of statements you write below. <b>Open</b>: the AI reads the interview and pulls out each person's own beliefs.</p></div>
-          <div class="g-field"><span class="g-term">Items (Closed mode)</span><p>Each item is one belief statement, with its scale wording and guidance for the AI. Add or remove items here.</p></div>
-          <div class="g-field"><span class="g-term">Open Extraction Settings (Open mode)</span><p>The most beliefs the AI will pull from one interview, plus optional extra guidance.</p></div>
-        </section>
-
-        <section class="g-section" id="g-rating">
-          <h3>Node Rating</h3>
-          <p>How each statement gets rated before it goes on the map.</p>
-          <div class="g-field"><span class="g-term">Agreement (fixed)</span><p>Every statement is rated on a built-in 6-point agreement scale (Strongly disagree to Strongly agree). This scale is fixed and cannot be edited.</p></div>
-          <div class="g-field"><span class="g-term">Extra dimensions</span><p>Add your own extra rating scales (e.g. personal importance), each with its own label and endpoint wording.</p></div>
-        </section>
-
-        <section class="g-section" id="g-canvas">
-          <h3>Canvas</h3>
-          <p>The map-building task and the tutorial video shown before it.</p>
-          <div class="g-field"><span class="g-term">Intro Video</span><p>Upload your own tutorial video or keep the built-in demo. Use <b>Upload video</b> to replace it and <b>Use built-in video</b> to go back. Supported files: mp4, webm, ogg, or mov, up to 50 MB, one video at a time. A YouTube link will not work - it must be a direct video file. If you upload your own, update the two text boxes below it <b>and</b> the example statements so they describe what your video actually shows.</p></div>
-          <div class="g-callout"><b>Hosting note.</b> An uploaded video is stored on the server. On some hosting setups the server's files are reset when it restarts, so you may need to re-upload the video after a restart. If in doubt, check that the video still plays after deploying.</div>
-          <div class="g-field"><span class="g-term">Minimum / maximum statements on map</span><p>How many statements a participant must place. Someone who places fewer than the minimum is screened out (sent to the screen-out link).</p></div>
-          <div class="g-field"><span class="g-term">Appearance settings</span><p>Hidden until you click "appearance settings" - which rating drives node colour, the colour range, and node size.</p></div>
-          <div class="g-field"><span class="g-term">Relationship Types</span><p>The kinds of connections participants can draw between statements (e.g. Supporting, Conflicting). Each has a label, a colour, and the wording shown to participants.</p></div>
-          <div class="g-field"><span class="g-term">Mutually Exclusive Relationships</span><p>Put relationship types in a group if a pair of statements should only ever have one of them - e.g. group Supporting and Conflicting so a pair can be one or the other, not both. Leave empty to allow any combination.</p></div>
-        </section>
-
-        <section class="g-section" id="g-final">
-          <h3>Final Network</h3>
-          <div class="g-field"><span class="g-term">Show final network to participants</span><p>When on, participants see their finished map and answer a few follow-up questions about it.</p></div>
-          <div class="g-field"><span class="g-term">Follow-up questions</span><p>The questions shown on that final page.</p></div>
+        <section class="g-section" id="g-tips">
+          <h3>Good to know</h3>
+          <div class="g-field"><span class="g-term">Saving is safe mid-study</span><p>Changes you save take effect for the next participant who starts. People already partway through are not disturbed, and nothing needs restarting.</p></div>
+          <div class="g-field"><span class="g-term">The minimum statements is a quality check</span><p>A participant who places fewer than the minimum is sent to your screen-out link instead of the completion link, so you can handle those responses separately on the platform.</p></div>
+          <div class="g-field"><span class="g-term">The Agreement scale is fixed</span><p>It is always a 6-point Strongly-disagree-to-Strongly-agree scale and cannot be changed. Any extra rating scales you add are entirely up to you.</p></div>
+          <div class="g-field"><span class="g-term">Replacing the tutorial video</span><p>Use an mp4, webm, ogg or mov file up to 50 MB (a YouTube link will not work). If you replace it, also update the example statements so they match the new video. On some hosts the video may need re-uploading after the server restarts.</p></div>
+          <div class="g-field"><span class="g-term">Always test first</span><p>Run yourself through with a test link and confirm the final redirect before launching to real participants.</p></div>
         </section>
       </div>
     </div>
