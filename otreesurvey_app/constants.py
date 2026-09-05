@@ -9,4 +9,3 @@ class C(BaseConstants):
     MAX_EDGE_PAGES = 10     # page slot ceiling for edge types
     MAX_BELIEF_ITEMS = 30
     NUM_NODES_THRESHOLD = 3
-    NUM_NODES_MAX = 10

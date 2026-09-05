@@ -238,11 +238,6 @@
     <div class="tab-panel" id="tab-interview">
       <fieldset>
         <legend>Interview</legend>
-        <div class="checkbox-row">
-          <input type="checkbox" id="interview_enabled" data-path="interview.enabled">
-          <label for="interview_enabled">Interview enabled</label>
-        </div>
-
         <label for="interview_topic">Topic</label>
         <input type="text" id="interview_topic" data-path="interview.topic">
 
@@ -371,17 +366,9 @@
 
       <fieldset>
         <legend>Canvas</legend>
-        <div class="inline-group" >
-          <div>
-            <label for="canvas_min_nodes">Minimum statements on map</label>
-            <input type="number" id="canvas_min_nodes" data-path="canvas.min_nodes" min="1">
-            <div class="help">Participants must place at least this many</div>
-          </div>
-          <div>
-            <label for="canvas_max_nodes">Maximum statements on map</label>
-            <input type="number" id="canvas_max_nodes" data-path="canvas.max_nodes" min="1">
-          </div>
-        </div>
+        <label for="canvas_min_nodes">Minimum statements on map</label>
+        <input type="number" id="canvas_min_nodes" data-path="canvas.min_nodes" min="1">
+        <div class="help">Participants must place at least this many. Someone who places fewer is screened out.</div>
 
         <div class="adv-toggle" onclick="toggleAdvanced(this)">appearance settings</div>
         <div class="adv-section">
