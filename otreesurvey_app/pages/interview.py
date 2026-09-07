@@ -25,6 +25,11 @@ class Information(Page):
     form_model = 'player'
 
     @staticmethod
+    def vars_for_template(player):
+        from ..config_loader import get_config
+        return dict(topic=get_config()["interview"].get("topic", "the topic"))
+
+    @staticmethod
     def is_displayed(player):
         return player.consent_given and player.field_maybe_none('condition') in _INTERVIEW_CONDITIONS
 

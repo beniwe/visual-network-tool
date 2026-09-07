@@ -1,18 +1,22 @@
-{% extends "global/Page.html" %} {% block content %}
+{% extends "global/Page.html" %} {% block styles %}
+<link rel="stylesheet" href="{{ static 'global.css' }}" />
+{% endblock %} {% block content %}
 
-<h3>End of study</h3>
-<p>
-  Thank you for your time. Based on your responses, you are unfortunately not
-  eligible to complete the full study.
-</p>
-<p>
-  You will now be redirected back to the study platform. After manual review you
-  might be eligible for partial compensation.
-</p>
-<p>
-  If the redirection does not happen automatically, please click
-  <a id="manual-link" href="">this link</a>.
-</p>
+<div class="exit-card">
+  <h3>End of study</h3>
+  <p>
+    Thank you for your time. Based on your responses, you are unfortunately not
+    eligible to complete the full study.
+  </p>
+  <p>
+    You will now be redirected back to the study platform. After manual review
+    you might be eligible for partial compensation.
+  </p>
+  <p>
+    If the redirection does not happen automatically, please click
+    <a id="manual-link" href="">this link</a>.
+  </p>
+</div>
 
 {% endblock %} {% block scripts %}
 <script>

@@ -18,44 +18,7 @@
     </button>
 
     <div id="more-text" style="display: none; margin-top: 1em">
-      <p>
-        This study has been reviewed by the ethics committee of the Technical
-        University of Vienna. You are being asked to take part because you are
-        at least 18 years old.
-      </p>
-
-      <p>
-        There are no foreseeable risks associated with this study, but some
-        individuals may experience discomfort. You may withdraw from the study
-        at any time without penalty and may also ask us to remove your data. If
-        you have any negative experiences during the study, please contact the
-        study coordinators Mirta Galesic and Victor Møller Poulsen at
-        <a href="mailto:collectivemindslab@gmail.com"
-          >collectivemindslab@gmail.com</a
-        >.
-      </p>
-
-      <p>
-        All metadata that could identify you, such as your participant ID, will
-        be kept strictly confidential and stored separately from your survey
-        responses. It will not be included in any published or shared data.
-      </p>
-
-      <p>
-        Your fully anonymised data may be analysed and shared in an Open Data
-        Repository, accessible to other researchers for non-commercial,
-        scientific use. This complies with EU data protection policies and
-        supports transparency and reproducibility in academic research.
-      </p>
-
-      <p>
-        If you complete the study but decide you want your data removed, please
-        contact us at
-        <a href="mailto:collectivemindslab@gmail.com"
-          >collectivemindslab@gmail.com</a
-        >
-        within 30 days of completing the survey.
-      </p>
+      {{ consent_details|safe }}
     </div>
 
     <div style="margin-top: 1em"></div>

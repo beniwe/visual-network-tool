@@ -34,6 +34,7 @@ class Consent(Page):
         return dict(
             consent_intro=cfg["consent_intro"],
             consent_highlight=cfg["consent_highlight"],
+            consent_details=cfg.get("consent_details", ""),
         )
 
     @staticmethod
