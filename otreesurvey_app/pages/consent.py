@@ -65,13 +65,21 @@ class Consent(Page):
             return "Please indicate whether you consent to participate."
 
 
+def _testing_mode():
+    """The condition picker is a testing tool - hidden once the study is
+    deployed (OTREE_PRODUCTION set). In production every participant follows
+    the route chosen by study.mode, assigned in creating_session."""
+    import os
+    return os.environ.get('OTREE_PRODUCTION') in (None, '', '0')
+
+
 class ConditionSelector(Page):
     form_model = 'player'
     form_fields = ['condition']
 
     @staticmethod
     def is_displayed(player):
-        return player.consent_given
+        return player.consent_given and _testing_mode()
 
     @staticmethod
     def before_next_page(player, timeout_happened):

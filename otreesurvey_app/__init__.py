@@ -48,8 +48,11 @@ class Subsession(BaseSubsession):
 
 
 def creating_session(subsession: Subsession):
+    from .config_loader import get_config
+    mode = get_config().get('study', {}).get('mode', 'interview')
+    condition = 'interview_tag' if mode == 'interview' else 'color_tag'
     for player in subsession.get_players():
-        player.condition = 'color_tag'
+        player.condition = condition
 
 
 class Group(BaseGroup):

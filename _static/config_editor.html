@@ -40,6 +40,9 @@
   .help { font-size: 12px; color: #6c757d; margin-top: 2px; }
   .help code { background: #f1f3f5; padding: 1px 4px; border-radius: 3px; font-size: 11px; word-break: break-all; }
   .required-banner { background: #fff8e1; border: 1px solid #ffe082; border-left: 4px solid #ff9800; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: #5f4300; }
+  .mode-note { background: #eef4fb; border: 1px solid #cfe0f3; border-left: 4px solid #4a90d9; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: #22384d; }
+  .tab-panel.mode-disabled fieldset { opacity: 0.5; pointer-events: none; }
+  .cfg-sidebar a.mode-off { color: #adb5bd; }
   label .req { color: #d32f2f; font-weight: 700; margin-left: 3px; }
 
   .list-controls { margin-bottom: 8px; }
@@ -143,6 +146,16 @@
     <!-- Study -->
     <div class="tab-panel active" id="tab-study">
       <fieldset>
+        <legend>Study mode</legend>
+        <label for="study_mode">How beliefs are collected</label>
+        <select id="study_mode" data-path="study.mode" onchange="applyStudyMode()">
+          <option value="interview">Interview - the AI extracts each participant's own beliefs</option>
+          <option value="predefined">Predefined beliefs - participants rate a fixed set of statements you write</option>
+        </select>
+        <div class="help">Sets which version of the study every participant goes through. In Predefined mode there is no interview, so the Interview tab and open extraction are not used.</div>
+      </fieldset>
+
+      <fieldset>
         <legend>Study</legend>
         <label for="study_label">Study label</label>
         <input type="text" id="study_label" data-path="study.label">
@@ -236,6 +249,9 @@
 
     <!-- Interview -->
     <div class="tab-panel" id="tab-interview">
+      <div class="mode-note" id="interview-disabled-note" style="display:none">
+        This study is set to <b>Predefined beliefs</b> mode on the Study tab, so there is no interview. These settings are not used - switch the study mode to Interview to enable them.
+      </div>
       <fieldset>
         <legend>Interview</legend>
         <label for="interview_topic">Topic</label>
@@ -290,7 +306,7 @@
 
     <!-- Node Extraction -->
     <div class="tab-panel" id="tab-extraction">
-      <fieldset>
+      <fieldset id="extraction-mode-row">
         <legend>Node Extraction</legend>
         <label for="extraction_mode">Mode</label>
         <select id="extraction_mode" data-path="node_extraction.mode" onchange="toggleExtractionMode()">
@@ -461,14 +477,14 @@
         <section class="g-section" id="g-overview">
           <h3>Overview</h3>
           <p><b>How a run works.</b> A participant opens your study link and reads the consent page. If they decline, they leave right away. If they agree, they go through the main task: rating statements about your topic and arranging them into a visual map of how those statements relate. When they finish, they are automatically sent back to your recruitment platform, and everything they did is saved.</p>
-          <p><b>Two versions.</b> Some participants do a short AI interview first, and then rate and map the beliefs the AI drew out of what they said. Others skip the interview and go straight to rating and mapping a fixed set of statements you wrote. Which version a participant gets is decided by their study condition, not by a single switch in here.</p>
+          <p><b>Two versions.</b> You choose which one your study runs with the <b>Study mode</b> setting on the Study tab. In <b>Interview</b> mode, participants do a short AI interview and then rate and map the beliefs the AI drew out of what they said. In <b>Predefined beliefs</b> mode, they skip the interview and rate and map a fixed set of statements you wrote. Everyone in a given study gets the same version.</p>
         </section>
 
         <section class="g-section" id="g-setup">
           <h3>Set up a study</h3>
           <p>A study is put together tab by tab. A natural order to work through them:</p>
-          <div class="g-field"><span class="g-term">1. Consent - Study tab</span><p>Write the consent text and the highlighted line with your time estimate and payment. The Study label is just an internal name to tell runs apart; participants never see it.</p></div>
-          <div class="g-field"><span class="g-term">2. Statements - Node Extraction tab</span><p>Choose how statements are decided. <b>Closed</b>: everyone rates a fixed set of statements you write (as Items). <b>Open</b>: the AI reads each participant's interview and pulls out their own beliefs. Open mode only makes sense with the interview version.</p></div>
+          <div class="g-field"><span class="g-term">1. Study mode &amp; consent - Study tab</span><p>Pick the Study mode (Interview or Predefined beliefs) - this is the biggest choice and it decides which tabs matter. Then write the consent text and the highlighted line with your time estimate and payment. The Study label is just an internal name to tell runs apart; participants never see it.</p></div>
+          <div class="g-field"><span class="g-term">2. Statements - Node Extraction tab</span><p>In Interview mode you can choose <b>Closed</b> (everyone rates a fixed set of statements you write as Items) or <b>Open</b> (the AI pulls each participant's own beliefs from their interview). In Predefined mode it is always the Items you write.</p></div>
           <div class="g-field"><span class="g-term">3. Ratings - Node Rating tab</span><p>Every statement is rated on the built-in Agreement scale. Add extra rating scales (like personal importance) only if you actually want that data.</p></div>
           <div class="g-field"><span class="g-term">4. The map - Canvas tab</span><p>Set how many statements a participant must place, and define the relationship types they can draw between statements (e.g. Supporting, Conflicting). You can also replace the tutorial video shown before the task.</p></div>
           <div class="g-field"><span class="g-term">5. The interview - Interview tab</span><p>For the interview version, set the topic, the opening and closing questions, and the interviewer's style. The interviewer's core behaviour is fixed, so wording changes here cannot break the conversation.</p></div>
@@ -582,6 +598,7 @@ function populateForm() {
   renderQuestions();
   populateDimensionDropdowns();
   toggleExtractionMode();
+  applyStudyMode();
 }
 
 function collectFromForm() {
@@ -714,6 +731,21 @@ function toggleExtractionMode() {
   var mode = document.getElementById('extraction_mode').value;
   document.getElementById('extraction-items-section').style.display = mode === 'closed' ? '' : 'none';
   document.getElementById('extraction-open-section').style.display = mode === 'open' ? '' : 'none';
+}
+
+function applyStudyMode() {
+  var predefined = document.getElementById('study_mode').value === 'predefined';
+
+  // Predefined mode has no interview, so open extraction is forced to closed.
+  if (predefined) document.getElementById('extraction_mode').value = 'closed';
+  document.getElementById('extraction-mode-row').style.display = predefined ? 'none' : '';
+  toggleExtractionMode();
+
+  // Interview settings are not used in predefined mode.
+  document.getElementById('tab-interview').classList.toggle('mode-disabled', predefined);
+  document.getElementById('interview-disabled-note').style.display = predefined ? '' : 'none';
+  var link = document.querySelector('.cfg-sidebar a[data-tab=interview]');
+  if (link) link.classList.toggle('mode-off', predefined);
 }
 
 // -- Dimensions --
